@@ -1,5 +1,5 @@
 [package]
-name = "rtp"
+name = "rtp-factory"
 version = "0.0.1"
 authors = ["Mario Reder <mario.reder@pm.me>"]
 edition = "2021"
@@ -8,4 +8,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-rtp-lib = { path = "../rtp-lib" }
+rtp-factory-lib = { path = "../rtp-factory-lib" }

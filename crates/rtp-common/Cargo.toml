@@ -1,5 +1,5 @@
 [package]
-name = "rtp-lib"
+name = "rtp-common"
 version = "0.0.1"
 authors = ["Mario Reder <mario.reder@pm.me>"]
 edition = "2021"
@@ -8,17 +8,8 @@ edition = "2021"
 crate-type = ["rlib"]
 
 [dependencies]
-rtp-common = { path = "../rtp-common" }
-thiserror = "1"
-
-[dependencies.near-contract-standards]
-version = "4"
-git = "https://github.com/near/near-sdk-rs.git"
-rev = "e4c924058e9159ff54a5bfc4adaa8b79ba04d876"
-
 [dependencies.near-sdk]
 version = "4"
 git = "https://github.com/near/near-sdk-rs.git"
 rev = "e4c924058e9159ff54a5bfc4adaa8b79ba04d876"
 default-features = false
-features = ["unit-testing", "unstable"]

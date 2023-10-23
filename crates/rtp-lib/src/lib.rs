@@ -1,19 +1,16 @@
+mod contract;
+mod error;
+
+pub use contract::*;
+pub use error::*;
+
 use near_sdk::{
-    borsh::{self, BorshDeserialize, BorshSerialize},
-    near_bindgen, BorshStorageKey, PanicOnDefault,
+    borsh::{self, BorshSerialize},
+    BorshStorageKey,
 };
 
-#[near_bindgen]
-#[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
-pub struct Contract {}
-
-// #[derive(BorshStorageKey, BorshSerialize)]
-// pub enum StorageKey {}
-
-#[near_bindgen]
-impl Contract {
-    #[init]
-    pub fn new() -> Self {
-        Self {}
-    }
+#[derive(BorshStorageKey, BorshSerialize)]
+pub enum StorageKey {
+    TradeA,
+    TradeB,
 }

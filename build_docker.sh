@@ -20,7 +20,7 @@ docker create \
 fi
 
 docker start $NAME
-docker exec $NAME /bin/bash -c "rustup default 1.69; rustup target add wasm32-unknown-unknown; cargo build -p rtp --target wasm32-unknown-unknown --release"
+docker exec $NAME /bin/bash -c "rustup default 1.73; rustup target add wasm32-unknown-unknown; cargo build -p rtp --target wasm32-unknown-unknown --release; cargo build -p rtp-factory --target wasm32-unknown-unknown --release"
 
 mkdir -p res
 cp $DIR/target/wasm32-unknown-unknown/release/*.wasm $DIR/res/
