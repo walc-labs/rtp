@@ -1,0 +1,11 @@
+[package]
+name = "rtp"
+version = "0.0.1"
+authors = ["Mario Reder <mari.reder@pm.me>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rtp-lib = { path = "../rtp-lib" }
