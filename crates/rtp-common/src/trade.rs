@@ -15,7 +15,7 @@ pub struct Trade {
     pub payment_calendars: String, // TODO what is this?
     pub deal_status: DealStatus,
     pub contract_number: String, // TODO `contract_id`?
-    pub trade_number: String,    // TODO `trade_id`?
+    pub trade_id: String,        // TODO `trade_id`?
                                  // contract_timestamp: u64, // TODO
                                  // trade: String,
 }

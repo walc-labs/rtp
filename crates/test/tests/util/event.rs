@@ -1,6 +1,6 @@
 use near_sdk::AccountId;
 use owo_colors::OwoColorize;
-use rtp_common::Trade;
+use rtp_common::{Outcome, Trade};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
@@ -11,7 +11,7 @@ pub enum ContractEvent {
     Rtp(RtpEvent),
 }
 
-pub const KNOWN_EVENT_KINDS: [&str; 2] = ["new_partnership", "send_trade"];
+pub const KNOWN_EVENT_KINDS: [&str; 3] = ["new_partnership", "send_trade", "settle_trade"];
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct RtpEvent {
@@ -26,6 +26,12 @@ pub struct RtpEvent {
 pub enum RtpEventKind {
     NewPartnership(NewPartnership),
     SendTrade(SendTrade),
+    SettleTrade(SettleTrade),
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct NewPartnership {
+    partnership_id: AccountId,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -35,8 +41,9 @@ pub struct SendTrade {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct NewPartnership {
-    partnership_id: AccountId,
+pub struct SettleTrade {
+    trade_id: String,
+    outcome: Outcome,
 }
 
 impl Display for ContractEvent {
@@ -56,6 +63,9 @@ impl Display for RtpEvent {
             RtpEventKind::SendTrade(_) => {
                 formatter.write_fmt(format_args!("{}: send_trade", "event".bright_cyan()))?;
             }
+            RtpEventKind::SettleTrade(_) => {
+                formatter.write_fmt(format_args!("{}: settle_trade", "event".bright_cyan()))?;
+            }
         }
         formatter.write_fmt(format_args!("\n{}: rtp", "standard".bright_cyan(),))?;
         formatter.write_fmt(format_args!(
@@ -68,6 +78,9 @@ impl Display for RtpEvent {
                 formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
             }
             RtpEventKind::SendTrade(data) => {
+                formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
+            }
+            RtpEventKind::SettleTrade(data) => {
                 formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
             }
         }

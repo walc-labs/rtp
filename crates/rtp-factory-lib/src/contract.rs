@@ -6,9 +6,9 @@ use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen,
     store::{Lazy, UnorderedSet},
-    AccountId, Balance, PanicOnDefault, Promise, PromiseError,
+    Balance, PanicOnDefault, Promise, PromiseError,
 };
-use rtp_common::{RtpEvent, Trade};
+use rtp_common::{Outcome, RtpEvent, Trade};
 use serde_json::json;
 use std::{
     cmp::Ordering,
@@ -172,19 +172,23 @@ impl Contract {
     }
 
     #[handle_result]
-    pub fn get_partnership_id(
-        &self,
-        #[allow(unused_mut)] mut bank_a: String,
-        #[allow(unused_mut)] mut bank_b: String,
-    ) -> Result<AccountId, ContractError> {
-        let mut hasher = DefaultHasher::new();
-        match bank_a.cmp(&bank_b) {
-            Ordering::Less => {}
-            Ordering::Greater => std::mem::swap(&mut bank_a, &mut bank_b),
-            Ordering::Equal => return Err(ContractError::InvalidBankInput),
+    pub fn settle_trade(
+        &mut self,
+        partnership_id: String,
+        trade_id: String,
+        outcome: Outcome,
+    ) -> Result<Promise, ContractError> {
+        if !self.partnership_contracts.contains(&partnership_id) {
+            return Err(ContractError::PartnershipNotYetExists);
         }
-        (&bank_a, &bank_b).hash(&mut hasher);
 
-        Ok(format!("{:x}", hasher.finish()).parse().unwrap())
+        let factory_account_id = env::current_account_id();
+        let partnership_id = format!("{partnership_id}.{factory_account_id}")
+            .parse()
+            .unwrap();
+
+        Ok(rtp::ext(partnership_id)
+            .with_unused_gas_weight(1)
+            .settle_trade(trade_id, outcome))
     }
 }

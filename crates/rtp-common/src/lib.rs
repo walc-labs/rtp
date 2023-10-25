@@ -11,4 +11,6 @@ pub enum RtpEvent {
     NewPartnership { partnership_id: String },
     #[event_version("1.0.0")]
     SendTrade { bank: String, trade: Trade },
+    #[event_version("1.0.0")]
+    SettleTrade { trade_id: String, outcome: Outcome },
 }
