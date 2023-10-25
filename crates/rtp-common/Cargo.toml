@@ -8,8 +8,4 @@ edition = "2021"
 crate-type = ["rlib"]
 
 [dependencies]
-[dependencies.near-sdk]
-version = "4"
-git = "https://github.com/near/near-sdk-rs.git"
-rev = "e4c924058e9159ff54a5bfc4adaa8b79ba04d876"
-default-features = false
+near-sdk.workspace = true

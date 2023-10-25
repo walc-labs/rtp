@@ -6,7 +6,7 @@ use near_workspaces::{
     network::Sandbox,
     result::{ExecutionFinalResult, ExecutionResult, Value, ViewResultDetails},
     types::{KeyType, SecretKey},
-    Account, Contract, Worker,
+    Contract, Worker,
 };
 use owo_colors::OwoColorize;
 use rtp_common::RtpEvent;
@@ -36,10 +36,8 @@ macro_rules! print_log {
     };
 }
 
-pub async fn initialize_contracts() -> anyhow::Result<(Worker<Sandbox>, Account, Contract)> {
+pub async fn initialize_contracts() -> anyhow::Result<(Worker<Sandbox>, Contract)> {
     let worker = near_workspaces::sandbox().await?;
-
-    let owner = worker.dev_create_account().await?;
 
     let wasm = include_bytes!("../../../../res/rtp_factory.wasm");
 
@@ -51,7 +49,7 @@ pub async fn initialize_contracts() -> anyhow::Result<(Worker<Sandbox>, Account,
 
     call::new(&contract, contract.as_account()).await?;
 
-    Ok((worker, owner, contract))
+    Ok((worker, contract))
 }
 
 pub fn log_tx_result(

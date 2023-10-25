@@ -6,7 +6,7 @@ pub use error::*;
 
 use near_sdk::{
     borsh::{self, BorshSerialize},
-    BorshStorageKey, Gas,
+    Balance, BorshStorageKey, Gas, ONE_NEAR,
 };
 
 #[derive(BorshStorageKey, BorshSerialize)]
@@ -20,3 +20,5 @@ const CREATE_CALL_GAS: Gas = Gas::from_tgas(40);
 
 /// Gas allocated on the callback.
 const ON_CREATE_CALL_GAS: Gas = Gas::from_tgas(10);
+
+const REPRESENTATIVE_DEPOSIT_TO_COVER_GAS: Balance = ONE_NEAR;

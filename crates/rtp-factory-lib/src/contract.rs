@@ -1,4 +1,7 @@
-use crate::{ContractError, StorageKey, CREATE_CALL_GAS, ON_CREATE_CALL_GAS};
+use crate::{
+    ContractError, StorageKey, CREATE_CALL_GAS, ON_CREATE_CALL_GAS,
+    REPRESENTATIVE_DEPOSIT_TO_COVER_GAS,
+};
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen,
@@ -43,9 +46,10 @@ impl Contract {
 
     #[private]
     #[handle_result]
+    #[payable]
     // FIXME unused_mut
     pub fn create_partnership(
-        &self,
+        &mut self,
         #[allow(unused_mut)] mut bank_a: String,
         #[allow(unused_mut)] mut bank_b: String,
     ) -> Result<(), ContractError> {
@@ -54,7 +58,8 @@ impl Contract {
 
         let code = self.contract_code.get();
         let code_len = code.len();
-        let storage_cost = ((code_len + 32) as Balance) * env::storage_byte_cost();
+        let storage_cost = ((code_len + 32) as Balance) * env::storage_byte_cost()
+            + REPRESENTATIVE_DEPOSIT_TO_COVER_GAS;
         if attached_deposit < storage_cost {
             return Err(ContractError::NotEnoughDeposit(
                 storage_cost,
@@ -77,6 +82,9 @@ impl Contract {
         }
 
         // Schedule a Promise tx to account_id.
+        let partnership_id = format!("{partnership_id}.{factory_account_id}")
+            .parse()
+            .unwrap();
         let promise_id = env::promise_batch_create(&partnership_id);
 
         // Create account first.
@@ -94,19 +102,25 @@ impl Contract {
             "bank_a": bank_a,
             "bank_b": bank_b
         });
-        let args = args.as_str().unwrap().as_bytes();
-        env::promise_batch_action_function_call(promise_id, "new", args, 0, CREATE_CALL_GAS);
+        let args = args.to_string();
+        env::promise_batch_action_function_call(
+            promise_id,
+            "new",
+            args.as_bytes(),
+            0,
+            CREATE_CALL_GAS,
+        );
 
         // attach callback to the factory.
         let args = json!({
             "partnership_id": partnership_id
         });
-        let args = args.as_str().unwrap().as_bytes();
+        let args = args.to_string();
         let _ = env::promise_then(
             promise_id,
             factory_account_id,
             "on_create_partnership",
-            args,
+            args.as_bytes(),
             0,
             ON_CREATE_CALL_GAS,
         );
@@ -132,6 +146,7 @@ impl Contract {
         let code = self.contract_code.get();
         let code_len = code.len();
         ((code_len + 32) as Balance) * env::storage_byte_cost()
+            + REPRESENTATIVE_DEPOSIT_TO_COVER_GAS
     }
 
     #[handle_result]

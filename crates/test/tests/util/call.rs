@@ -1,6 +1,7 @@
 use super::{event, log_tx_result};
 use near_workspaces::{
     result::{ExecutionResult, Value},
+    types::Balance,
     Account, Contract,
 };
 
@@ -20,8 +21,8 @@ pub async fn store_contract(
     contract: &Contract,
     sender: &Account,
     input: Vec<u8>,
-) -> anyhow::Result<ExecutionResult<Value>> {
-    let (res, _) = log_tx_result(
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+    let (res, events) = log_tx_result(
         Some("store_contract"),
         sender
             .call(contract.id(), "store_contract")
@@ -30,19 +31,22 @@ pub async fn store_contract(
             .transact()
             .await?,
     )?;
-    Ok(res)
+    Ok((res, events))
 }
 
 pub async fn create_partnership(
-    token: &Contract,
+    contract: &Contract,
     bank_a: &str,
     bank_b: &str,
+    storage_cost: Balance,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
     let (res, events) = log_tx_result(
         None,
-        token
+        contract
             .call("create_partnership")
             .args_json((bank_a, bank_b))
+            .deposit(storage_cost)
+            .max_gas()
             .transact()
             .await?,
     )?;
