@@ -4,6 +4,7 @@ use near_workspaces::{
     types::Balance,
     Account, Contract,
 };
+use rtp_common::Trade;
 
 pub async fn new(contract: &Contract, sender: &Account) -> anyhow::Result<ExecutionResult<Value>> {
     let (res, _): (ExecutionResult<Value>, Vec<event::ContractEvent>) = log_tx_result(
@@ -46,6 +47,24 @@ pub async fn create_partnership(
             .call("create_partnership")
             .args_json((bank_a, bank_b))
             .deposit(storage_cost)
+            .max_gas()
+            .transact()
+            .await?,
+    )?;
+    Ok((res, events))
+}
+
+pub async fn perform_trade(
+    contract: &Contract,
+    bank: &str,
+    partnership_id: &str,
+    trade: &Trade,
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+    let (res, events) = log_tx_result(
+        None,
+        contract
+            .call("perform_trade")
+            .args_json((bank, partnership_id, trade))
             .max_gas()
             .transact()
             .await?,

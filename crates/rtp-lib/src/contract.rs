@@ -1,9 +1,7 @@
-use crate::{ContractError, StorageKey};
+use crate::ContractError;
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    env, near_bindgen,
-    store::LazyOption,
-    AccountId, PanicOnDefault,
+    env, near_bindgen, AccountId, PanicOnDefault,
 };
 use rtp_common::{RtpEvent, Trade};
 
@@ -13,8 +11,6 @@ pub struct Contract {
     factory: AccountId,
     bank_a: String,
     bank_b: String,
-    trade_a: LazyOption<Trade>,
-    trade_b: LazyOption<Trade>,
 }
 
 #[near_bindgen]
@@ -25,8 +21,6 @@ impl Contract {
             factory,
             bank_a,
             bank_b,
-            trade_a: LazyOption::new(StorageKey::TradeA, None),
-            trade_b: LazyOption::new(StorageKey::TradeB, None),
         }
     }
 

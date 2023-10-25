@@ -1,14 +1,14 @@
 use crate::{
-    ContractError, StorageKey, CREATE_CALL_GAS, ON_CREATE_CALL_GAS,
+    rtp, ContractError, StorageKey, CREATE_CALL_GAS, ON_CREATE_CALL_GAS,
     REPRESENTATIVE_DEPOSIT_TO_COVER_GAS,
 };
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen,
     store::{Lazy, UnorderedSet},
-    AccountId, Balance, PanicOnDefault, PromiseError,
+    AccountId, Balance, PanicOnDefault, Promise, PromiseError,
 };
-use rtp_common::RtpEvent;
+use rtp_common::{RtpEvent, Trade};
 use serde_json::json;
 use std::{
     cmp::Ordering,
@@ -19,7 +19,7 @@ use std::{
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
 pub struct Contract {
-    partnership_contracts: UnorderedSet<AccountId>,
+    partnership_contracts: UnorderedSet<String>,
     contract_code: Lazy<Vec<u8>>,
 }
 
@@ -75,17 +75,17 @@ impl Contract {
         }
         (&bank_a, &bank_b).hash(&mut hasher);
 
-        let partnership_id = format!("{:x}", hasher.finish()).parse().unwrap();
+        let partnership_id = format!("{:x}", hasher.finish());
 
         if self.partnership_contracts.contains(&partnership_id) {
             return Err(ContractError::PartnershipAlreadyExists);
         }
 
         // Schedule a Promise tx to account_id.
-        let partnership_id = format!("{partnership_id}.{factory_account_id}")
+        let partnership_account_id = format!("{partnership_id}.{factory_account_id}")
             .parse()
             .unwrap();
-        let promise_id = env::promise_batch_create(&partnership_id);
+        let promise_id = env::promise_batch_create(&partnership_account_id);
 
         // Create account first.
         env::promise_batch_action_create_account(promise_id);
@@ -132,11 +132,12 @@ impl Contract {
     #[private]
     pub fn on_create_partnership(
         &mut self,
-        partnership_id: AccountId,
+        partnership_id: String,
         #[callback_result] callback_res: Result<(), PromiseError>,
     ) {
         callback_res.unwrap();
-        self.partnership_contracts.insert(partnership_id.clone());
+        self.partnership_contracts
+            .insert(partnership_id.to_string());
 
         let event = RtpEvent::NewPartnership { partnership_id };
         event.emit();
@@ -147,6 +148,27 @@ impl Contract {
         let code_len = code.len();
         ((code_len + 32) as Balance) * env::storage_byte_cost()
             + REPRESENTATIVE_DEPOSIT_TO_COVER_GAS
+    }
+
+    #[handle_result]
+    pub fn perform_trade(
+        &mut self,
+        bank: String,
+        partnership_id: String,
+        trade: Trade,
+    ) -> Result<Promise, ContractError> {
+        if !self.partnership_contracts.contains(&partnership_id) {
+            return Err(ContractError::PartnershipNotYetExists);
+        }
+
+        let factory_account_id = env::current_account_id();
+        let partnership_id = format!("{partnership_id}.{factory_account_id}")
+            .parse()
+            .unwrap();
+
+        Ok(rtp::ext(partnership_id)
+            .with_unused_gas_weight(1)
+            .perform_trade(bank, trade))
     }
 
     #[handle_result]
