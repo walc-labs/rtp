@@ -5,6 +5,7 @@ authors = ["Mario Reder <mario.reder@pm.me>"]
 edition = "2021"
 
 [dev-dependencies]
+rtp-contract-common = { path = "../rtp-contract-common" }
 rtp-common = { path = "../rtp-common" }
 rtp-lib = { path = "../rtp-lib" }
 anyhow.workspace = true

@@ -8,7 +8,7 @@ edition = "2021"
 crate-type = ["rlib"]
 
 [dependencies]
-rtp-common = { path = "../rtp-common" }
+rtp-contract-common = { path = "../rtp-contract-common" }
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 serde_json.workspace = true

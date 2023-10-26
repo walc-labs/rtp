@@ -1,5 +1,4 @@
 pub mod call;
-pub mod event;
 pub mod view;
 
 use near_workspaces::{
@@ -9,7 +8,8 @@ use near_workspaces::{
     Contract, Worker,
 };
 use owo_colors::OwoColorize;
-use rtp_common::RtpEvent;
+use rtp_common::{ContractEvent, KNOWN_EVENT_KINDS};
+use rtp_contract_common::RtpEventBindgen;
 use serde::Serialize;
 use std::fmt;
 
@@ -55,7 +55,7 @@ pub async fn initialize_contracts() -> anyhow::Result<(Worker<Sandbox>, Contract
 pub fn log_tx_result(
     ident: Option<&str>,
     res: ExecutionFinalResult,
-) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     for failure in res.receipt_failures() {
         print_log!("{:#?}", failure.bright_red());
     }
@@ -64,7 +64,7 @@ pub fn log_tx_result(
         if !outcome.logs.is_empty() {
             for log in outcome.logs.iter() {
                 if log.starts_with("EVENT_JSON:") {
-                    let event: event::ContractEvent =
+                    let event: ContractEvent =
                         serde_json::from_str(&log.replace("EVENT_JSON:", ""))?;
                     events.push(event.clone());
                     print_log!(
@@ -99,7 +99,7 @@ pub fn log_view_result(res: ViewResultDetails) -> anyhow::Result<ViewResultDetai
     Ok(res)
 }
 
-pub fn assert_event_emits<T>(actual: T, events: Vec<RtpEvent>) -> anyhow::Result<()>
+pub fn assert_event_emits<T>(actual: T, events: Vec<RtpEventBindgen>) -> anyhow::Result<()>
 where
     T: Serialize + fmt::Debug + Clone,
 {
@@ -112,14 +112,14 @@ where
             .unwrap()
             .as_str()
             .unwrap();
-        event::KNOWN_EVENT_KINDS.contains(&event_str)
+        KNOWN_EVENT_KINDS.contains(&event_str)
     });
     let mut expected = vec![];
     for event in events {
         let mut expected_event = serde_json::to_value(event)?;
         let ev = expected_event.as_object_mut().unwrap();
         let event_str = ev.get("event").unwrap().as_str().unwrap();
-        if !event::KNOWN_EVENT_KINDS.contains(&event_str) {
+        if !KNOWN_EVENT_KINDS.contains(&event_str) {
             continue;
         }
         ev.insert("standard".into(), "rtp".into());

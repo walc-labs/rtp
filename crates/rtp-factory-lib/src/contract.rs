@@ -8,7 +8,7 @@ use near_sdk::{
     store::{Lazy, UnorderedSet},
     Balance, PanicOnDefault, Promise, PromiseError,
 };
-use rtp_common::{Outcome, RtpEvent, Trade};
+use rtp_contract_common::{Outcome, RtpEventBindgen, Trade};
 use serde_json::json;
 use std::{
     cmp::Ordering,
@@ -139,7 +139,7 @@ impl Contract {
         self.partnership_contracts
             .insert(partnership_id.to_string());
 
-        let event = RtpEvent::NewPartnership { partnership_id };
+        let event = RtpEventBindgen::NewPartnership { partnership_id };
         event.emit();
     }
 

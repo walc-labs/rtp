@@ -1,6 +1,8 @@
 mod util;
 
-use rtp_common::{DealStatus, DealType, Outcome, RtpEvent, Settlement, Side, Speed, Trade};
+use rtp_contract_common::{
+    DealStatus, DealType, Outcome, RtpEventBindgen, Settlement, Side, Speed, Trade,
+};
 use util::*;
 
 const RTP_WASM: &[u8] = include_bytes!("../../../res/rtp.wasm");
@@ -25,7 +27,10 @@ async fn test_create_partnership() -> anyhow::Result<()> {
     let storage_cost = view::get_partnership_storage_cost(&contract).await?;
     let (_, events) = call::create_partnership(&contract, &bank_a, &bank_b, storage_cost).await?;
     let partnership_id = view::get_partnership_id(&contract, &bank_a, &bank_b).await?;
-    assert_event_emits(events, vec![RtpEvent::NewPartnership { partnership_id }])?;
+    assert_event_emits(
+        events,
+        vec![RtpEventBindgen::NewPartnership { partnership_id }],
+    )?;
 
     Ok(())
 }
@@ -58,7 +63,7 @@ async fn test_perform_trade_success() -> anyhow::Result<()> {
     let (_, events) = call::perform_trade(&contract, &bank_a, &partnership_id, &trade).await?;
     assert_event_emits(
         events,
-        vec![RtpEvent::SendTrade {
+        vec![RtpEventBindgen::SendTrade {
             bank: bank_a,
             trade: trade.clone(),
         }],
@@ -67,7 +72,7 @@ async fn test_perform_trade_success() -> anyhow::Result<()> {
     let (_, events) = call::perform_trade(&contract, &bank_b, &partnership_id, &trade).await?;
     assert_event_emits(
         events,
-        vec![RtpEvent::SendTrade {
+        vec![RtpEventBindgen::SendTrade {
             bank: bank_b,
             trade,
         }],
@@ -97,7 +102,7 @@ async fn test_settle_trade_success() -> anyhow::Result<()> {
     .await?;
     assert_event_emits(
         events,
-        vec![RtpEvent::SettleTrade {
+        vec![RtpEventBindgen::SettleTrade {
             trade_id: "trade_id".to_string(),
             outcome: Outcome::Success("Trade successfull".to_string()),
         }],

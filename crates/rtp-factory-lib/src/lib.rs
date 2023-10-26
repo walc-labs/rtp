@@ -10,7 +10,7 @@ use near_sdk::{
     borsh::{self, BorshSerialize},
     ext_contract, Balance, BorshStorageKey, Gas, ONE_NEAR,
 };
-use rtp_common::{Outcome, Trade};
+use rtp_contract_common::{Outcome, Trade};
 
 #[derive(BorshStorageKey, BorshSerialize)]
 pub enum StorageKey {

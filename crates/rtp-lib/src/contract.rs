@@ -3,7 +3,7 @@ use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
     env, near_bindgen, AccountId, PanicOnDefault,
 };
-use rtp_common::{Outcome, RtpEvent, Trade};
+use rtp_contract_common::{Outcome, RtpEventBindgen, Trade};
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
@@ -34,7 +34,7 @@ impl Contract {
             return Err(ContractError::InvalidBank);
         }
 
-        let event = RtpEvent::SendTrade { bank, trade };
+        let event: RtpEventBindgen = RtpEventBindgen::SendTrade { bank, trade };
         event.emit();
 
         Ok(())
@@ -52,7 +52,7 @@ impl Contract {
 
         // TODO no on-chain logic for storing/verifying?
 
-        let event = RtpEvent::SettleTrade { trade_id, outcome };
+        let event = RtpEventBindgen::SettleTrade { trade_id, outcome };
         event.emit();
 
         Ok(())

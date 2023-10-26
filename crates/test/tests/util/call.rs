@@ -1,13 +1,14 @@
-use super::{event, log_tx_result};
+use super::log_tx_result;
 use near_workspaces::{
     result::{ExecutionResult, Value},
     types::Balance,
     Account, Contract,
 };
-use rtp_common::{Outcome, Trade};
+use rtp_common::ContractEvent;
+use rtp_contract_common::{Outcome, Trade};
 
 pub async fn new(contract: &Contract, sender: &Account) -> anyhow::Result<ExecutionResult<Value>> {
-    let (res, _): (ExecutionResult<Value>, Vec<event::ContractEvent>) = log_tx_result(
+    let (res, _): (ExecutionResult<Value>, Vec<ContractEvent>) = log_tx_result(
         Some("new"),
         sender
             .call(contract.id(), "new")
@@ -22,7 +23,7 @@ pub async fn store_contract(
     contract: &Contract,
     sender: &Account,
     input: Vec<u8>,
-) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
         Some("store_contract"),
         sender
@@ -40,7 +41,7 @@ pub async fn create_partnership(
     bank_a: &str,
     bank_b: &str,
     storage_cost: Balance,
-) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
         None,
         contract
@@ -59,7 +60,7 @@ pub async fn perform_trade(
     bank: &str,
     partnership_id: &str,
     trade: &Trade,
-) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
         None,
         contract
@@ -77,7 +78,7 @@ pub async fn settle_trade(
     partnership_id: &str,
     trade_id: &str,
     outcome: &Outcome,
-) -> anyhow::Result<(ExecutionResult<Value>, Vec<event::ContractEvent>)> {
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
         None,
         contract
