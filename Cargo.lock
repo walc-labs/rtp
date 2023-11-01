@@ -2708,6 +2708,15 @@ version = "0.2.0"
 source = "git+https://github.com/near/near-sdk-rs.git?rev=e4c924058e9159ff54a5bfc4adaa8b79ba04d876#e4c924058e9159ff54a5bfc4adaa8b79ba04d876"
 
 [[package]]
+name = "near-token"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b68f3f8a2409f72b43efdbeff8e820b81e70824c49fee8572979d789d1683fb"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "near-vm-errors"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2746,9 +2755,9 @@ dependencies = [
 
 [[package]]
 name = "near-workspaces"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1f43c3cac1cf61d0f20fbc49f2c3182caa6422c0d2acd92c926a3e3190b26a9"
+checksum = "3a14e772e49ba9644c06dad20f635b6463f74d378fa19822bfc35fef479c72e5"
 dependencies = [
  "async-trait",
  "base64 0.21.5",
@@ -2766,6 +2775,7 @@ dependencies = [
  "near-jsonrpc-primitives",
  "near-primitives",
  "near-sandbox-utils",
+ "near-token",
  "rand 0.8.5",
  "reqwest",
  "serde",

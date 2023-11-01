@@ -1,7 +1,7 @@
 use super::log_tx_result;
 use near_workspaces::{
     result::{ExecutionResult, Value},
-    types::Balance,
+    types::NearToken,
     Account, Contract,
 };
 use rtp_common::ContractEvent;
@@ -40,7 +40,7 @@ pub async fn create_partnership(
     contract: &Contract,
     bank_a: &str,
     bank_b: &str,
-    storage_cost: Balance,
+    storage_cost: NearToken,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
         None,

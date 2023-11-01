@@ -1,5 +1,6 @@
 use super::log_view_result;
-use near_workspaces::{types::Balance, Contract};
+use near_sdk::Balance;
+use near_workspaces::Contract;
 
 pub async fn get_partnership_storage_cost(contract: &Contract) -> anyhow::Result<Balance> {
     let res = log_view_result(

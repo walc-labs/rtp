@@ -1,5 +1,6 @@
 mod util;
 
+use near_workspaces::types::NearToken;
 use rtp_contract_common::{
     DealStatus, DealType, Outcome, RtpEventBindgen, Settlement, Side, Speed, Trade,
 };
@@ -25,7 +26,13 @@ async fn test_create_partnership() -> anyhow::Result<()> {
     call::store_contract(&contract, contract.as_account(), RTP_WASM.to_vec()).await?;
 
     let storage_cost = view::get_partnership_storage_cost(&contract).await?;
-    let (_, events) = call::create_partnership(&contract, &bank_a, &bank_b, storage_cost).await?;
+    let (_, events) = call::create_partnership(
+        &contract,
+        &bank_a,
+        &bank_b,
+        NearToken::from_yoctonear(storage_cost),
+    )
+    .await?;
     let partnership_id = view::get_partnership_id(&contract, &bank_a, &bank_b).await?;
     assert_event_emits(
         events,
@@ -44,7 +51,13 @@ async fn test_perform_trade_success() -> anyhow::Result<()> {
     call::store_contract(&contract, contract.as_account(), RTP_WASM.to_vec()).await?;
 
     let storage_cost = view::get_partnership_storage_cost(&contract).await?;
-    call::create_partnership(&contract, &bank_a, &bank_b, storage_cost).await?;
+    call::create_partnership(
+        &contract,
+        &bank_a,
+        &bank_b,
+        NearToken::from_yoctonear(storage_cost),
+    )
+    .await?;
     let partnership_id = view::get_partnership_id(&contract, &bank_a, &bank_b).await?;
 
     let trade = Trade {
@@ -90,7 +103,13 @@ async fn test_settle_trade_success() -> anyhow::Result<()> {
     call::store_contract(&contract, contract.as_account(), RTP_WASM.to_vec()).await?;
 
     let storage_cost = view::get_partnership_storage_cost(&contract).await?;
-    call::create_partnership(&contract, &bank_a, &bank_b, storage_cost).await?;
+    call::create_partnership(
+        &contract,
+        &bank_a,
+        &bank_b,
+        NearToken::from_yoctonear(storage_cost),
+    )
+    .await?;
     let partnership_id = view::get_partnership_id(&contract, &bank_a, &bank_b).await?;
 
     let (_, events) = call::settle_trade(
