@@ -1,0 +1,22 @@
+{
+  "private": true,
+  "name": "api",
+  "version": "0.0.0",
+  "scripts": {
+    "start": "wrangler dev --env dev --local",
+    "deploy": "wrangler publish",
+    "build": "cross-env NODE_ENV=production node build.mjs",
+    "build:dev": "node build.mjs",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.1.11",
+    "hono": "^3.9.1",
+    "ts-pattern": "^5.0.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231025.0",
+    "cross-env": "^7.0.3"
+  }
+}

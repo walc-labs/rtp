@@ -1,1 +1,4 @@
 /target
+.env
+.near
+node_modules
