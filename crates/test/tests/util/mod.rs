@@ -5,7 +5,7 @@ use near_workspaces::{
     network::Sandbox,
     result::{ExecutionFinalResult, ExecutionResult, Value, ViewResultDetails},
     types::{KeyType, SecretKey},
-    Contract, Worker,
+    Contract, DevNetwork, Worker,
 };
 use owo_colors::OwoColorize;
 use rtp_common::{ContractEvent, KNOWN_EVENT_KINDS};

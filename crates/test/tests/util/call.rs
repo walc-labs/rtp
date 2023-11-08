@@ -36,6 +36,37 @@ pub async fn store_contract(
     Ok((res, events))
 }
 
+pub async fn clear_storage(
+    contract: &Contract,
+    sender: &Account,
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
+    let (res, events) = log_tx_result(
+        Some("clear_storage"),
+        sender
+            .call(contract.id(), "clear_storage")
+            .max_gas()
+            .transact()
+            .await?,
+    )?;
+    Ok((res, events))
+}
+
+pub async fn remove_partnership(
+    contract: &Contract,
+    partnership_id: &str,
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
+    let (res, events) = log_tx_result(
+        Some("remove_partnership"),
+        contract
+            .call("remove_partnership")
+            .args_json((partnership_id,))
+            .max_gas()
+            .transact()
+            .await?,
+    )?;
+    Ok((res, events))
+}
+
 pub async fn create_partnership(
     contract: &Contract,
     bank_a: &str,
@@ -43,7 +74,7 @@ pub async fn create_partnership(
     storage_cost: NearToken,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
-        None,
+        Some("create_partnership"),
         contract
             .call("create_partnership")
             .args_json((bank_a, bank_b))

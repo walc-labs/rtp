@@ -23,12 +23,8 @@ use rtp_common::{ContractEvent, RtpEvent};
 use serde::Deserialize;
 use std::{env, sync::Arc};
 
-static DEX_ID: Lazy<AccountId> = Lazy::new(|| {
-    let mut dex_id = env::var("DEX_SUB_ACCOUNT").unwrap();
-    dex_id.push('.');
-    dex_id.push_str(&env::var("MASTER_ACCOUNT_ID").unwrap());
-    dex_id.parse().unwrap()
-});
+static FACTORY_ACCOUNT_ID: Lazy<AccountId> =
+    Lazy::new(|| env::var("FACTORY_ACCOUNT_ID").unwrap().parse().unwrap());
 
 #[derive(Deserialize)]
 struct Info {
@@ -73,7 +69,7 @@ fn handle_message(msg: StreamerMessage) -> Vec<RtpEvent> {
                     },
             } in shard.receipt_execution_outcomes
             {
-                if receiver_id != *DEX_ID {
+                if receiver_id != *FACTORY_ACCOUNT_ID {
                     continue;
                 }
                 match outcome.status {
@@ -89,7 +85,7 @@ fn handle_message(msg: StreamerMessage) -> Vec<RtpEvent> {
 
             if let Some(chunk) = shard.chunk {
                 for transaction in chunk.transactions {
-                    if transaction.transaction.receiver_id != *DEX_ID {
+                    if transaction.transaction.receiver_id != *FACTORY_ACCOUNT_ID {
                         continue;
                     }
                     match transaction.outcome.execution_outcome.outcome.status {

@@ -1,0 +1,4 @@
+{
+  // uncomment for testnet/staging
+  // "rust-analyzer.cargo.features": "all"
+}

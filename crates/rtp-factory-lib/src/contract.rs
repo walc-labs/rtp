@@ -19,8 +19,8 @@ use std::{
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
 pub struct Contract {
-    partnership_contracts: UnorderedSet<String>,
-    contract_code: Lazy<Vec<u8>>,
+    pub partnership_contracts: UnorderedSet<String>,
+    pub contract_code: Lazy<Vec<u8>>,
 }
 
 #[near_bindgen]
@@ -36,12 +36,47 @@ impl Contract {
     }
 
     /// Store contract from input.
+    #[private]
     #[handle_result]
     pub fn store_contract(&mut self) -> Result<(), ContractError> {
         let input = env::input().ok_or(ContractError::NoInput)?;
         self.contract_code.set(input);
 
         Ok(())
+    }
+
+    /// Clear storage for testing.
+    #[private]
+    #[handle_result]
+    pub fn clear_storage(&mut self) {
+        self.partnership_contracts.clear();
+        self.contract_code.set(vec![]);
+    }
+
+    #[private]
+    pub fn remove_partnership(&mut self, partnership_id: String) -> Promise {
+        let factory_account_id = env::current_account_id();
+        let partnership_contract_id = format!("{partnership_id}.{factory_account_id}")
+            .parse()
+            .unwrap();
+
+        rtp::ext(partnership_contract_id)
+            .remove_partnership()
+            .then(Self::ext(env::current_account_id()).on_remove_partnership(partnership_id))
+        // Promise::new(partnership_contract_id)
+        //     .delete_account(factory_account_id)
+        //     .then(Self::ext(env::current_account_id()).on_remove_partnership(partnership_id))
+        //     .as_return();
+    }
+
+    #[private]
+    pub fn on_remove_partnership(
+        &mut self,
+        partnership_id: String,
+        #[callback_result] callback_res: Result<(), PromiseError>,
+    ) {
+        callback_res.unwrap();
+        self.partnership_contracts.remove(&partnership_id);
     }
 
     #[private]
@@ -150,6 +185,7 @@ impl Contract {
             + REPRESENTATIVE_DEPOSIT_TO_COVER_GAS
     }
 
+    #[private]
     #[handle_result]
     pub fn perform_trade(
         &mut self,
@@ -171,6 +207,7 @@ impl Contract {
             .perform_trade(bank, trade))
     }
 
+    #[private]
     #[handle_result]
     pub fn settle_trade(
         &mut self,

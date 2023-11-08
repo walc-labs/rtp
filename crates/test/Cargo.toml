@@ -9,12 +9,18 @@ rtp-contract-common = { path = "../rtp-contract-common" }
 rtp-common = { path = "../rtp-common" }
 rtp-lib = { path = "../rtp-lib" }
 anyhow.workspace = true
+dotenv.workspace = true
 futures.workspace = true
 maplit.workspace = true
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 near-workspaces.workspace = true
 owo-colors.workspace = true
+reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
+tryhard.workspace = true
+
+[features]
+testnet = []

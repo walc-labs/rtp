@@ -8,6 +8,16 @@ use std::{
 
 #[near_bindgen]
 impl Contract {
+    pub fn get_partnerships(&self, skip: Option<u32>, limit: Option<u32>) -> Vec<String> {
+        self.partnership_contracts
+            .iter()
+            .skip(skip.unwrap_or_default() as usize)
+            .enumerate()
+            .take_while(|(index, _)| *index < limit.unwrap_or(20) as usize)
+            .map(|partnership| partnership.1.clone())
+            .collect()
+    }
+
     #[handle_result]
     pub fn get_partnership_id(
         &self,

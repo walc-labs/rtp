@@ -31,4 +31,6 @@ trait Rtp {
     fn perform_trade(&mut self, bank: String, trade: Trade);
 
     fn settle_trade(&mut self, trade_id: String, outcome: Outcome);
+
+    fn remove_partnership(&mut self);
 }

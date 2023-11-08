@@ -1,7 +1,7 @@
 use crate::ContractError;
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    env, near_bindgen, AccountId, PanicOnDefault,
+    env, near_bindgen, AccountId, PanicOnDefault, Promise,
 };
 use rtp_contract_common::{Outcome, RtpEventBindgen, Trade};
 
@@ -54,6 +54,19 @@ impl Contract {
 
         let event = RtpEventBindgen::SettleTrade { trade_id, outcome };
         event.emit();
+
+        Ok(())
+    }
+
+    #[handle_result]
+    pub fn remove_partnership(&mut self) -> Result<(), ContractError> {
+        if env::predecessor_account_id() != self.factory {
+            return Err(ContractError::NotFactory);
+        }
+
+        Promise::new(env::current_account_id())
+            .delete_account(self.factory.clone())
+            .as_return();
 
         Ok(())
     }
