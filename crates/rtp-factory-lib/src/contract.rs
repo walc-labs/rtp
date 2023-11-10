@@ -8,7 +8,7 @@ use near_sdk::{
     store::{Lazy, UnorderedSet},
     Balance, PanicOnDefault, Promise, PromiseError,
 };
-use rtp_contract_common::{Outcome, RtpEventBindgen, Trade};
+use rtp_contract_common::{DealStatus, RtpEventBindgen, TradeDetails};
 use serde_json::json;
 use std::{
     cmp::Ordering,
@@ -63,10 +63,6 @@ impl Contract {
         rtp::ext(partnership_contract_id)
             .remove_partnership()
             .then(Self::ext(env::current_account_id()).on_remove_partnership(partnership_id))
-        // Promise::new(partnership_contract_id)
-        //     .delete_account(factory_account_id)
-        //     .then(Self::ext(env::current_account_id()).on_remove_partnership(partnership_id))
-        //     .as_return();
     }
 
     #[private]
@@ -134,6 +130,7 @@ impl Contract {
         // call `new` with given arguments.
         let args = json!({
             "factory": factory_account_id,
+            "partnership_id": partnership_id,
             "bank_a": bank_a,
             "bank_b": bank_b
         });
@@ -178,20 +175,13 @@ impl Contract {
         event.emit();
     }
 
-    pub fn get_partnership_storage_cost(&self) -> Balance {
-        let code = self.contract_code.get();
-        let code_len = code.len();
-        ((code_len + 32) as Balance) * env::storage_byte_cost()
-            + REPRESENTATIVE_DEPOSIT_TO_COVER_GAS
-    }
-
     #[private]
     #[handle_result]
     pub fn perform_trade(
         &mut self,
         bank: String,
         partnership_id: String,
-        trade: Trade,
+        trade_details: TradeDetails,
     ) -> Result<Promise, ContractError> {
         if !self.partnership_contracts.contains(&partnership_id) {
             return Err(ContractError::PartnershipNotYetExists);
@@ -204,7 +194,7 @@ impl Contract {
 
         Ok(rtp::ext(partnership_id)
             .with_unused_gas_weight(1)
-            .perform_trade(bank, trade))
+            .perform_trade(bank, trade_details))
     }
 
     #[private]
@@ -213,7 +203,7 @@ impl Contract {
         &mut self,
         partnership_id: String,
         trade_id: String,
-        outcome: Outcome,
+        deal_status: DealStatus,
     ) -> Result<Promise, ContractError> {
         if !self.partnership_contracts.contains(&partnership_id) {
             return Err(ContractError::PartnershipNotYetExists);
@@ -226,6 +216,6 @@ impl Contract {
 
         Ok(rtp::ext(partnership_id)
             .with_unused_gas_weight(1)
-            .settle_trade(trade_id, outcome))
+            .settle_trade(trade_id, deal_status))
     }
 }

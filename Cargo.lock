@@ -3617,6 +3617,7 @@ dependencies = [
  "near-jsonrpc-client",
  "near-lake-framework",
  "once_cell",
+ "owo-colors",
  "rayon",
  "reqwest",
  "rtp-common",

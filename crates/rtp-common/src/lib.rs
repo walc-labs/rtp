@@ -1,6 +1,6 @@
 use near_sdk::AccountId;
 use owo_colors::OwoColorize;
-use rtp_contract_common::{Outcome, Trade};
+use rtp_contract_common::{DealStatus, TradeDetails};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
@@ -31,19 +31,21 @@ pub enum RtpEventKind {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct NewPartnership {
-    partnership_id: AccountId,
+    pub partnership_id: AccountId,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SendTrade {
+    partnership_id: String,
     bank: String,
-    trade: Trade,
+    trade: TradeDetails,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SettleTrade {
+    partnership_id: String,
     trade_id: String,
-    outcome: Outcome,
+    deal_status: DealStatus,
 }
 
 impl Display for ContractEvent {

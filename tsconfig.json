@@ -6,12 +6,12 @@
     "esModuleInterop": true,
     "sourceMap": true,
     "strict": true,
-    "lib": ["esnext"],
+    "skipLibCheck": true,
+    "lib": ["esnext", "webworker"],
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "types": ["@cloudflare/workers-types"],
     "baseUrl": "."
   },
-  "include": ["api/**/*"],
   "exclude": ["node_modules", "api/dist/**/*"]
 }

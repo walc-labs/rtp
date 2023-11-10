@@ -7,7 +7,7 @@ mod sandbox {
     use crate::util::*;
     use near_workspaces::types::NearToken;
     use rtp_contract_common::{
-        DealStatus, DealType, Outcome, RtpEventBindgen, Settlement, Side, Speed, Trade,
+        DealStatus, DealType, RtpEventBindgen, Settlement, Side, Speed, TradeDetails,
     };
 
     const RTP_WASM: &[u8] = include_bytes!("../../../res/rtp.wasm");
@@ -64,23 +64,25 @@ mod sandbox {
         .await?;
         let partnership_id = view::get_partnership_id(&contract, &bank_a, &bank_b).await?;
 
-        let trade = Trade {
+        let trade = TradeDetails {
+            trade_id: "trade_id".to_string(),
             timestamp: 0,
             deal_type: DealType::FxDeal,
             speed: Speed::RealTime,
             contract: "contract".to_string(),
+            amount: "1".to_string(),
+            price: "2".to_string(),
             side: Side::Buy,
             settlement: Settlement::RealTime,
             delivery_date: 0,
             payment_calendars: "payment_calendars".to_string(),
-            deal_status: DealStatus::Pending,
             contract_number: "contract_number".to_string(),
-            trade_id: "trade_id".to_string(),
         };
         let (_, events) = call::perform_trade(&contract, &bank_a, &partnership_id, &trade).await?;
         assert_event_emits(
             events,
             vec![RtpEventBindgen::SendTrade {
+                partnership_id: partnership_id.clone(),
                 bank: bank_a,
                 trade: trade.clone(),
             }],
@@ -90,6 +92,7 @@ mod sandbox {
         assert_event_emits(
             events,
             vec![RtpEventBindgen::SendTrade {
+                partnership_id: partnership_id.clone(),
                 bank: bank_b,
                 trade,
             }],
@@ -116,18 +119,36 @@ mod sandbox {
         .await?;
         let partnership_id = view::get_partnership_id(&contract, &bank_a, &bank_b).await?;
 
+        let trade = TradeDetails {
+            trade_id: "trade_id".to_string(),
+            timestamp: 0,
+            deal_type: DealType::FxDeal,
+            speed: Speed::RealTime,
+            contract: "contract".to_string(),
+            amount: "1".to_string(),
+            price: "2".to_string(),
+            side: Side::Buy,
+            settlement: Settlement::RealTime,
+            delivery_date: 0,
+            payment_calendars: "payment_calendars".to_string(),
+            contract_number: "contract_number".to_string(),
+        };
+        call::perform_trade(&contract, &bank_a, &partnership_id, &trade).await?;
+        call::perform_trade(&contract, &bank_b, &partnership_id, &trade).await?;
+
         let (_, events) = call::settle_trade(
             &contract,
             &partnership_id,
             "trade_id",
-            &Outcome::Success("Trade successfull".to_string()),
+            &DealStatus::Confirmed("Trade successfull".to_string()),
         )
         .await?;
         assert_event_emits(
             events,
             vec![RtpEventBindgen::SettleTrade {
+                partnership_id: partnership_id.clone(),
                 trade_id: "trade_id".to_string(),
-                outcome: Outcome::Success("Trade successfull".to_string()),
+                deal_status: DealStatus::Confirmed("Trade successfull".to_string()),
             }],
         )?;
 

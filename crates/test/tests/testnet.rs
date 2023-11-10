@@ -19,7 +19,7 @@ mod testnet {
         Account, Contract, Worker,
     };
     use owo_colors::OwoColorize;
-    use rtp_contract_common::{DealStatus, DealType, Settlement, Side, Speed, Trade};
+    use rtp_contract_common::{DealStatus, DealType, Settlement, Side, Speed, TradeDetails};
     use std::{env, path::PathBuf};
     use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -50,22 +50,26 @@ mod testnet {
         .await?;
         let partnership_id = view::get_partnership_id(&factory, &bank_a, &bank_b).await?;
 
-        let trade = Trade {
+        let mut trade_details = TradeDetails {
+            trade_id: "trade_id".to_string(),
             timestamp: 0,
             deal_type: DealType::FxDeal,
             speed: Speed::RealTime,
             contract: "contract".to_string(),
+            amount: "1".to_string(),
+            price: "2".to_string(),
             side: Side::Buy,
             settlement: Settlement::RealTime,
             delivery_date: 0,
             payment_calendars: "payment_calendars".to_string(),
-            deal_status: DealStatus::Pending,
             contract_number: "contract_number".to_string(),
-            trade_id: "trade_id".to_string(),
         };
 
-        call::perform_trade(&factory, &bank_a, &partnership_id, &trade).await?;
-        call::perform_trade(&factory, &bank_b, &partnership_id, &trade).await?;
+        call::perform_trade(&factory, &bank_a, &partnership_id, &trade_details).await?;
+        trade_details.side = Side::Sell;
+        call::perform_trade(&factory, &bank_b, &partnership_id, &trade_details).await?;
+
+        // TODO check off-chain matching via on-chain settlement
 
         Ok(())
     }

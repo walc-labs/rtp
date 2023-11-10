@@ -1,33 +1,52 @@
 name = "rtp-api"
-main = "dist/index.mjs"
+main = "src/index.ts"
 usage_model = 'bundled'
 workers_dev = true
 compatibility_date = "2023-11-01"
-
-[build]
-command = "yarn install && yarn build"
+node_compat = true
 
 [vars]
 # The necessary secrets are:
 # - INDEXER_SECRET
+# - FACTORY_PRIVATE_KEY
 # Run `echo <VALUE> | wrangler secret put <NAME>` for each of these
 
 [durable_objects]
-bindings = [{ name = "PARTNERSHIPS", class_name = "Partnerships" }]
+bindings = [
+  { name = "INFO", class_name = "Info" },
+  { name = "PARTNERSHIPS", class_name = "Partnerships" },
+]
 
 [[migrations]]
 tag = "v1"
-new_classes = ["Partnerships"]
+new_classes = ["Info", "Partnerships"]
+
+[env.staging]
+
+[env.staging.vars]
+NEAR_RPC_URL = "https://rpc.testnet.near.org"
+FACTORY_ACCOUNT_ID = "rtp_staging_v2.testnet"
+
+[env.staging.durable_objects]
+bindings = [
+  { name = "INFO", class_name = "Info" },
+  { name = "PARTNERSHIPS", class_name = "Partnerships" },
+]
+
+[[env.staging.migrations]]
+tag = "v1"
+new_classes = ["Info", "Partnerships"]
 
 [env.dev]
-[env.dev.build]
-command = "yarn install && yarn build:dev"
 
 [env.dev.vars]
 
 [env.dev.durable_objects]
-bindings = [{ name = "PARTNERSHIPS", class_name = "Partnerships" }]
+bindings = [
+  { name = "INFO", class_name = "Info" },
+  { name = "PARTNERSHIPS", class_name = "Partnerships" },
+]
 
 [[env.dev.migrations]]
 tag = "v1"
-new_classes = ["Partnerships"]
+new_classes = ["Info", "Partnerships"]

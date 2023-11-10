@@ -5,12 +5,11 @@
   "scripts": {
     "start": "wrangler dev --env dev --local",
     "deploy": "wrangler publish",
-    "build": "cross-env NODE_ENV=production node build.mjs",
-    "build:dev": "node build.mjs",
     "test": "vitest"
   },
   "dependencies": {
     "@hono/zod-validator": "^0.1.11",
+    "@tarnadas/near-api-js": "^1.1.3",
     "hono": "^3.9.1",
     "ts-pattern": "^5.0.5",
     "zod": "^3.22.4"

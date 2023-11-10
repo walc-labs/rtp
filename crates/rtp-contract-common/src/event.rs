@@ -1,4 +1,4 @@
-use crate::{Outcome, Trade};
+use crate::{DealStatus, TradeDetails};
 use near_sdk::near_bindgen;
 
 #[near_bindgen(event_json(standard = "rtp"))]
@@ -7,7 +7,15 @@ pub enum RtpEventBindgen {
     #[event_version("1.0.0")]
     NewPartnership { partnership_id: String },
     #[event_version("1.0.0")]
-    SendTrade { bank: String, trade: Trade },
+    SendTrade {
+        partnership_id: String,
+        bank: String,
+        trade: TradeDetails,
+    },
     #[event_version("1.0.0")]
-    SettleTrade { trade_id: String, outcome: Outcome },
+    SettleTrade {
+        partnership_id: String,
+        trade_id: String,
+        deal_status: DealStatus,
+    },
 }

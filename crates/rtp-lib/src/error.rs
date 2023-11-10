@@ -10,4 +10,8 @@ pub enum ContractError {
     NotFactory,
     #[error("Invalid bank")]
     InvalidBank,
+    #[error("Trade ID does not exist")]
+    InvalidTradeId,
+    #[error("Trade incompete")]
+    TradeIncomplete,
 }

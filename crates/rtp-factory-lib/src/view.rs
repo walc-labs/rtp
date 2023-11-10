@@ -1,5 +1,5 @@
-use crate::{Contract, ContractError, ContractExt};
-use near_sdk::{near_bindgen, AccountId};
+use crate::{Contract, ContractError, ContractExt, REPRESENTATIVE_DEPOSIT_TO_COVER_GAS};
+use near_sdk::{env, near_bindgen, AccountId, Balance};
 use std::{
     cmp::Ordering,
     collections::hash_map::DefaultHasher,
@@ -33,5 +33,12 @@ impl Contract {
         (&bank_a, &bank_b).hash(&mut hasher);
 
         Ok(format!("{:x}", hasher.finish()).parse().unwrap())
+    }
+
+    pub fn get_partnership_storage_cost(&self) -> Balance {
+        let code = self.contract_code.get();
+        let code_len = code.len();
+        ((code_len + 32) as Balance) * env::storage_byte_cost()
+            + REPRESENTATIVE_DEPOSIT_TO_COVER_GAS
     }
 }
