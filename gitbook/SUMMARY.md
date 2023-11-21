@@ -1,24 +1,19 @@
 # Table of contents
 
-* [👋 Welcome to A Product](README.md)
+* [💸 Real Time Payment (PoC)](README.md)
+* [💡 Terminology](terminology.md)
 
-## Overview
+## Actors
 
-* [💡 What we do](overview/what-we-do.md)
-* [✨ Our Features](overview/our-features.md)
+* [Overview](actors/overview.md)
+* [Factory Smart Contract](actors/factory-smart-contract.md)
+* [Partnership Smart Contract](actors/partnership-smart-contract.md)
+* [Indexer](actors/indexer.md)
+* [Cloudflare Workers API](actors/cloudflare-workers-api.md)
 
-## Product Guides
+## Scenarios
 
-* [📪 Making a post](product-guides/making-a-post.md)
-* [📎 Understanding Projects](product-guides/understanding-projects.md)
-
-## Fundamentals
-
-* [🛠 Getting set up](fundamentals/getting-set-up/README.md)
-  * [📝 Setting permissions](fundamentals/getting-set-up/setting-permissions.md)
-  * [🧑 Inviting Members](fundamentals/getting-set-up/inviting-members.md)
-
-## Use Cases
-
-* [🎨 For Designers](use-cases/for-designers.md)
-* [🖥 For Developers](use-cases/for-developers.md)
+* [Overview](scenarios/overview.md)
+* [Initialization](scenarios/initialization.md)
+* [New Partnership](scenarios/new-partnership.md)
+* [Performing a Trade](scenarios/performing-a-trade.md)
