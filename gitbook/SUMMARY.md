@@ -6,10 +6,11 @@
 ## Actors
 
 * [Overview](actors/overview.md)
-* [Factory Smart Contract](actors/factory-smart-contract.md)
-* [Partnership Smart Contract](actors/partnership-smart-contract.md)
-* [Indexer](actors/indexer.md)
-* [Cloudflare Workers API](actors/cloudflare-workers-api.md)
+* [🔑 Owner](actors/owner.md)
+* [🏭 Factory Smart Contract](actors/factory-smart-contract.md)
+* [🤝 Partnership Smart Contract](actors/partnership-smart-contract.md)
+* [📖 Indexer](actors/indexer.md)
+* [⚙ Cloudflare Workers API](actors/cloudflare-workers-api.md)
 
 ## Scenarios
 

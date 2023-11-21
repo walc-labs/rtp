@@ -2,7 +2,7 @@
 
 ### Blockchain
 
-The chosen blockchain for the settlement is [Near Protocol](https://near.org). It has been chosen due to its sharded architecture, low transaction fees and fast settlement/block finalization.\
+The blockchain used for settlement is [Near Protocol](https://near.org). It has been chosen due to its sharded architecture, low transaction fees and fast settlement/block finalization.\
 A blockchain is a public ledger and all transactions can be investigated in an [explorer](https://explorer.near.org/), however it is also possible to encrypt the data, that is processed during a transaction to prevent external investigation.
 
 ### Block
@@ -11,7 +11,8 @@ Blocks are produced by the blockchain in a nearly constant time at around one se
 
 ### Addresses
 
-Users and programs of the blockchain are represented via addresses. Such addresses on Near Protocol are human readable (unlike Ethereum Virtual Machine compatible blockchains, where an address is a base64 encoded 20 bytes hash). This makes it easier to identify users and programs. Addresses are often also referred to as wallets.
+Users and programs of the blockchain are represented via addresses. Such addresses on Near Protocol are human readable (unlike Ethereum Virtual Machine compatible blockchains, where an address is a base64 encoded 20 bytes hash). This makes it easier to identify users and programs. Addresses are often also referred to as wallets.\
+An example of an address would be `walc.near`. An address on Near Protocol can also have sub-addresses, that are composed similar to a domain - subdomain relation, so we could e.g. create a sub-address `rtp.walc.near`. Sub-addresses are only convenient due to its naming convention, but they don't have any other relationship with their parent address and are entirely controlled by their own access keys.
 
 ### Access Keys
 

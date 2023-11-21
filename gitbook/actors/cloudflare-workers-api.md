@@ -1,2 +1,2 @@
-# Cloudflare Workers API
+# ⚙ Cloudflare Workers API
 
