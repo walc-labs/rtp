@@ -8,6 +8,8 @@ This repository contains the source for the Real Time Payments solution.
 - install Rust
 - install yarn
 
+In order to run the staging tests you also need an AWS and Cloudflare account.
+
 ## Staging environment tests
 
 ```sh
