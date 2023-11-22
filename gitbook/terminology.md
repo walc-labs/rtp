@@ -9,6 +9,11 @@ A blockchain is a public ledger and all transactions can be investigated in an [
 
 Blocks are produced by the blockchain in a nearly constant time at around one second. This is ensured by the blockchains design, because the computations done in a single block cannot exceed 1,000 [TeraGas](terminology.md#gas). A block contains information about which transactions have been processed.
 
+### Node
+
+The blockchain is a decentralized ledger that consists of computers distributed around the world that run the node software, which is capable of connecting to the blockchain. In short these computers can be called nodes.\
+There are different types of nodes, which serve different purposes. In the case of Near Protocol there are so called validators, which ensure that the blocks produced by the software meet a joint agreement across all nodes and that no bad actor can alter the state of the blockchain. Then there are also Remote Procedure Call (RPC) nodes, which can read and broadcast data to the blockchain and serve as an entrypoint for users and applications.
+
 ### Addresses
 
 Users and programs of the blockchain are represented via addresses. Such addresses on Near Protocol are human readable (unlike Ethereum Virtual Machine compatible blockchains, where an address is a base64 encoded 20 bytes hash). This makes it easier to identify users and programs. Addresses are often also referred to as wallets.\
@@ -22,9 +27,12 @@ There is a distinction between function-call access keys and full access keys. A
 ### Smart Contract
 
 Programs that are executed on the blockchain are called Smart Contracts (SCs). A SC on Near Protocol can be deployed on any address, so there is no distinction between user addresses and program addresses. Every address and therefore every SC has a state, that can be altered by calling a function of that SC. SC function calls that can alter state are also called transactions.\
-A transaction can also write log messages to the blockchain. If those log messages use a standardized format they are called events and can be more easily deserialized by programs that read blockchain data.\
 \
 The current RTP PoC is deployed on the address "[rtp\_staging\_v2.testnet](https://testnet.nearblocks.io/address/rtp\_staging\_v2.testnet)".
+
+#### Events
+
+A transaction can also write log messages to the blockchain. If those log messages use a standardized format they are called events and can be easier deserialized by programs that read blockchain data.
 
 ### Gas
 
