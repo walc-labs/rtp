@@ -10,12 +10,12 @@ export const batch = new Hono<{ Bindings: Env }>().post('/', async c => {
   for (const event of batchData.events) {
     console.info('event:', event.event, event.data);
     await match(event)
-      .with({ event: 'new_partnership', data: P.select() }, data => {
+      .with({ event: 'new_bank', data: P.select() }, data => {
         const addr = c.env.INFO.idFromName('');
         const obj = c.env.INFO.get(addr);
-        return obj.fetch(`${new URL(c.req.url).origin}/new_partnership`, {
+        return obj.fetch(`${new URL(c.req.url).origin}/new_bank`, {
           method: 'POST',
-          body: data.partnership_id
+          body: data.bank_id
         });
       })
       .with({ event: 'send_trade', data: P.select() }, data => {
@@ -28,6 +28,14 @@ export const batch = new Hono<{ Bindings: Env }>().post('/', async c => {
       })
       .with({ event: 'settle_trade', data: P.select() }, () => {
         // noop
+      })
+      .with({ event: 'confirm_payment', data: P.select() }, data => {
+        const addr = c.env.PARTNERSHIPS.idFromName(data.partnership_id);
+        const obj = c.env.PARTNERSHIPS.get(addr);
+        return obj.fetch(`${new URL(c.req.url).origin}/payment_confirmed`, {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
       })
       .exhaustive();
   }

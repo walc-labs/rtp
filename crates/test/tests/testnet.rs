@@ -40,15 +40,11 @@ mod testnet {
 
         call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
 
-        let storage_cost = view::get_partnership_storage_cost(&factory).await?;
-        call::create_partnership(
-            &factory,
-            &bank_a,
-            &bank_b,
-            NearToken::from_yoctonear(storage_cost),
-        )
-        .await?;
-        let partnership_id = view::get_partnership_id(&factory, &bank_a, &bank_b).await?;
+        let storage_cost = view::get_bank_storage_cost(&factory).await?;
+        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
+        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
+        let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
 
         let mut trade_details = TradeDetails {
             trade_id: "trade_id".to_string(),
@@ -56,6 +52,7 @@ mod testnet {
             deal_type: DealType::FxDeal,
             speed: Speed::RealTime,
             contract: "contract".to_string(),
+            counterparty: bank_b.clone(),
             amount: "1".to_string(),
             price: "2".to_string(),
             side: Side::Buy,
@@ -65,9 +62,13 @@ mod testnet {
             contract_number: "contract_number".to_string(),
         };
 
-        call::perform_trade(&factory, &bank_a, &partnership_id, &trade_details).await?;
+        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
         trade_details.side = Side::Sell;
-        call::perform_trade(&factory, &bank_b, &partnership_id, &trade_details).await?;
+        trade_details.counterparty = bank_a;
+        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+
+        call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
+        call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
 
         // TODO check off-chain matching via on-chain settlement
 
@@ -90,9 +91,9 @@ mod testnet {
             );
 
             let factory = account.deploy(RTP_FACTORY_WASM).await?.into_result()?;
-            let partnerships = view::get_partnerships(&factory, None, None).await?;
-            for partnership_id in partnerships {
-                call::remove_partnership(&factory, &partnership_id).await?;
+            let bank_ids = view::get_bank_ids(&factory, None, None).await?;
+            for bank_id in bank_ids {
+                call::remove_bank(&factory, &bank_id).await?;
             }
             call::clear_storage(&factory, factory.as_account()).await?;
 

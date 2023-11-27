@@ -19,7 +19,7 @@ use reqwest::{
     header::{HeaderMap, AUTHORIZATION},
     Client, Url,
 };
-use rtp_common::{ContractEvent, NewPartnership, RtpEvent, RtpEventKind};
+use rtp_common::{ContractEvent, NewBank, RtpEvent, RtpEventKind};
 use serde::Deserialize;
 use std::{env, sync::Arc};
 
@@ -29,7 +29,7 @@ static FACTORY_ACCOUNT_ID: Lazy<AccountId> =
 #[derive(Deserialize)]
 struct Info {
     last_block_height: u64,
-    partnership_ids: Vec<String>,
+    bank_ids: Vec<String>,
 }
 
 pub async fn start_indexing() -> Result<impl Stream<Item = (BlockHeight, u64, Vec<RtpEvent>)>> {
@@ -59,7 +59,7 @@ pub async fn start_indexing() -> Result<impl Stream<Item = (BlockHeight, u64, Ve
     })
 }
 
-fn handle_message(msg: StreamerMessage, partnership_ids: &mut Vec<AccountId>) -> Vec<RtpEvent> {
+fn handle_message(msg: StreamerMessage, bank_ids: &mut Vec<AccountId>) -> Vec<RtpEvent> {
     let mut res = vec![];
     for shard in msg.shards {
         for IndexerExecutionOutcomeWithReceipt {
@@ -72,7 +72,7 @@ fn handle_message(msg: StreamerMessage, partnership_ids: &mut Vec<AccountId>) ->
                 },
         } in shard.receipt_execution_outcomes
         {
-            if receiver_id != *FACTORY_ACCOUNT_ID && !partnership_ids.contains(&receiver_id) {
+            if receiver_id != *FACTORY_ACCOUNT_ID && !bank_ids.contains(&receiver_id) {
                 continue;
             }
             match outcome.status {
@@ -82,7 +82,7 @@ fn handle_message(msg: StreamerMessage, partnership_ids: &mut Vec<AccountId>) ->
 
             if let ReceiptEnumView::Action { .. } = receipt {
                 let mut events =
-                    extract_events(msg.block.header.timestamp, &outcome, partnership_ids);
+                    extract_events(msg.block.header.timestamp / 1_000_000, &outcome, bank_ids);
                 res.append(&mut events);
             }
         }
@@ -90,7 +90,7 @@ fn handle_message(msg: StreamerMessage, partnership_ids: &mut Vec<AccountId>) ->
         if let Some(chunk) = shard.chunk {
             for transaction in chunk.transactions {
                 if transaction.transaction.receiver_id != *FACTORY_ACCOUNT_ID
-                    && !partnership_ids.contains(&transaction.transaction.receiver_id)
+                    && !bank_ids.contains(&transaction.transaction.receiver_id)
                 {
                     continue;
                 }
@@ -99,9 +99,9 @@ fn handle_message(msg: StreamerMessage, partnership_ids: &mut Vec<AccountId>) ->
                     _ => {}
                 }
                 let mut events = extract_events(
-                    msg.block.header.timestamp,
+                    msg.block.header.timestamp_nanosec / 1_000_000,
                     &transaction.outcome.execution_outcome.outcome,
-                    partnership_ids,
+                    bank_ids,
                 );
                 res.append(&mut events);
             }
@@ -128,17 +128,17 @@ async fn get_current_block_height(
         .json()
         .await?;
     if info.last_block_height > 0 {
-        Ok((info.last_block_height + 1, info.partnership_ids))
+        Ok((info.last_block_height + 1, info.bank_ids))
     } else {
         let status = rpc_client.call(methods::status::RpcStatusRequest).await?;
-        Ok((status.sync_info.latest_block_height, info.partnership_ids))
+        Ok((status.sync_info.latest_block_height, info.bank_ids))
     }
 }
 
 fn extract_events(
     timestamp_ms: u64,
     outcome: &ExecutionOutcomeView,
-    partnership_ids: &mut Vec<AccountId>,
+    bank_ids: &mut Vec<AccountId>,
 ) -> Vec<RtpEvent> {
     let prefix = "EVENT_JSON:";
     outcome
@@ -161,12 +161,12 @@ fn extract_events(
                     &event
                 );
                 if let RtpEvent {
-                    event_kind: RtpEventKind::NewPartnership(NewPartnership { partnership_id }),
+                    event_kind: RtpEventKind::NewBank(NewBank { bank_id, .. }),
                     ..
                 } = &event
                 {
-                    partnership_ids.push(
-                        format!("{partnership_id}.{}", *FACTORY_ACCOUNT_ID)
+                    bank_ids.push(
+                        format!("{}.{}", bank_id, *FACTORY_ACCOUNT_ID)
                             .parse()
                             .unwrap(),
                     );

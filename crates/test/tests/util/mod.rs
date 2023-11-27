@@ -9,7 +9,7 @@ use near_workspaces::{
 };
 use owo_colors::OwoColorize;
 use rtp_common::{ContractEvent, KNOWN_EVENT_KINDS};
-use rtp_contract_common::RtpEventBindgen;
+use rtp_contract_common::RtpEvent;
 use serde::Serialize;
 use std::fmt;
 
@@ -99,7 +99,7 @@ pub fn log_view_result(res: ViewResultDetails) -> anyhow::Result<ViewResultDetai
     Ok(res)
 }
 
-pub fn assert_event_emits<T>(actual: T, events: Vec<RtpEventBindgen>) -> anyhow::Result<()>
+pub fn assert_event_emits<T>(actual: T, events: Vec<RtpEvent>) -> anyhow::Result<()>
 where
     T: Serialize + fmt::Debug + Clone,
 {

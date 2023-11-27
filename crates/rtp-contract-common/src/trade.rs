@@ -11,7 +11,7 @@ pub struct TradeDetails {
     pub deal_type: DealType,
     pub speed: Speed,
     pub contract: String,
-    // counterparty: String, // TODO not needed in smart contract?
+    pub counterparty: String,
     // internal_external: String, // TODO not needed in smart contract?
     // TODO amount & price?
     pub amount: String,
@@ -57,9 +57,10 @@ pub enum Settlement {
 #[derive(Clone, Debug, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Trade {
-    pub trade_a: Option<TradeDetails>,
-    pub trade_b: Option<TradeDetails>,
+    pub bank: String,
+    pub trade_details: TradeDetails,
     pub deal_status: DealStatus,
+    pub payments: Payments,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
@@ -74,4 +75,19 @@ pub enum DealStatus {
     Rejected(String),
     /// confirmed and executed trade by escrow/nostro
     Executed(String),
+    Error,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Payments {
+    pub credit: bool,
+    pub debit: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum PaymentConfirmation {
+    Credit,
+    Debit,
 }

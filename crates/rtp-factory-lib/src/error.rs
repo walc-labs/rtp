@@ -10,10 +10,10 @@ pub enum ContractError {
     NoInput,
     #[error("Not enough deposit. Required: {_0}; actual: {_1}")]
     NotEnoughDeposit(Balance, Balance),
-    #[error("Partnership contract already exists")]
-    PartnershipAlreadyExists,
-    #[error("Partnership contract does not yet exists")]
-    PartnershipNotYetExists,
+    #[error("Bank contract already exists")]
+    BankAlreadyExists,
+    #[error("Bank contract does not yet exists")]
+    BankNotYetExists,
     #[error("Invalid bank input")]
     InvalidBankInput,
 }

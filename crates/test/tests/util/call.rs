@@ -51,15 +51,15 @@ pub async fn clear_storage(
     Ok((res, events))
 }
 
-pub async fn remove_partnership(
+pub async fn remove_bank(
     contract: &Contract,
-    partnership_id: &str,
+    bank_id: &str,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
-        Some("remove_partnership"),
+        Some("remove_bank"),
         contract
-            .call("remove_partnership")
-            .args_json((partnership_id,))
+            .call("remove_bank")
+            .args_json((bank_id,))
             .max_gas()
             .transact()
             .await?,
@@ -67,17 +67,16 @@ pub async fn remove_partnership(
     Ok((res, events))
 }
 
-pub async fn create_partnership(
+pub async fn create_bank(
     contract: &Contract,
-    bank_a: &str,
-    bank_b: &str,
+    bank: &str,
     storage_cost: NearToken,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
-        Some("create_partnership"),
+        Some("create_bank"),
         contract
-            .call("create_partnership")
-            .args_json((bank_a, bank_b))
+            .call("create_bank")
+            .args_json((bank,))
             .deposit(storage_cost)
             .max_gas()
             .transact()
@@ -88,15 +87,14 @@ pub async fn create_partnership(
 
 pub async fn perform_trade(
     contract: &Contract,
-    bank: &str,
-    partnership_id: &str,
+    bank_id: &str,
     trade_details: &TradeDetails,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
         None,
         contract
             .call("perform_trade")
-            .args_json((bank, partnership_id, trade_details))
+            .args_json((bank_id, trade_details))
             .max_gas()
             .transact()
             .await?,
@@ -107,14 +105,34 @@ pub async fn perform_trade(
 pub async fn settle_trade(
     contract: &Contract,
     partnership_id: &str,
+    bank_a_id: &str,
+    bank_b_id: &str,
     trade_id: &str,
     deal_status: &DealStatus,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
-        None,
+        Some("settle_trade"),
         contract
             .call("settle_trade")
-            .args_json((partnership_id, trade_id, deal_status))
+            .args_json((partnership_id, bank_a_id, bank_b_id, trade_id, deal_status))
+            .max_gas()
+            .transact()
+            .await?,
+    )?;
+    Ok((res, events))
+}
+
+pub async fn confirm_payment(
+    contract: &Contract,
+    creditor_id: &str,
+    debitor_id: &str,
+    trade_id: &str,
+) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
+    let (res, events) = log_tx_result(
+        Some("confirm_payment"),
+        contract
+            .call("confirm_payment")
+            .args_json((creditor_id, debitor_id, trade_id))
             .max_gas()
             .transact()
             .await?,

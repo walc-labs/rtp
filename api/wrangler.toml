@@ -1,6 +1,5 @@
 name = "rtp-api"
 main = "src/index.ts"
-usage_model = 'bundled'
 workers_dev = true
 compatibility_date = "2023-11-01"
 node_compat = true
@@ -25,7 +24,7 @@ new_classes = ["Info", "Partnerships"]
 
 [env.staging.vars]
 NEAR_RPC_URL = "https://rpc.testnet.near.org"
-FACTORY_ACCOUNT_ID = "rtp_staging_v2.testnet"
+FACTORY_ACCOUNT_ID = "rtp_staging_v3.testnet"
 
 [env.staging.durable_objects]
 bindings = [

@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { match } from 'ts-pattern';
 
 import { Env } from './global';
-import { DealStatus, SendTradeData, Trade } from './types';
+import { ConfirmPaymentData, DealStatus, SendTradeData, Trade } from './types';
 
 const MAX_TIMESTAMP_DIFF = 1_000 * 60 * 60 * 2; // 2 hours
 
@@ -37,102 +37,258 @@ export class Partnerships {
     });
 
     this.app = new Hono();
-    this.app.post('/send_trade', async c => {
-      if (!this.near || !this.factoryContract) return c.text('', 500);
-      const { partnership_id, trade } = await c.req.json<SendTradeData>();
-      try {
-        const res = await fetch(env.NEAR_RPC_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            params: {
-              request_type: 'call_function',
-              finality: 'final',
-              account_id: `${partnership_id}.${env.FACTORY_ACCOUNT_ID}`,
-              method_name: 'get_trade',
-              args_base64: btoa(
-                JSON.stringify({
-                  trade_id: trade.trade_id
-                })
-              )
-            },
-            jsonrpc: '2.0',
-            id: 'dontcare',
-            method: 'query'
-          })
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const json: any = await res.json();
-        if (!json.result) return;
-        const result = new Uint8Array(json.result.result);
-        const decoder = new TextDecoder();
-        const onChainTrade: Trade = JSON.parse(decoder.decode(result));
+    this.app
+      .post('/send_trade', async c => {
+        if (!this.near || !this.factoryContract) return c.text('', 500);
+        const {
+          partnership_id,
+          bank_id: bank_a_id,
+          trade: trade_details
+        } = await c.req.json<SendTradeData>();
+        try {
+          const trade_a = await this.fetchOnChainTrade(
+            env,
+            bank_a_id,
+            trade_details.trade_id
+          );
+          if (trade_a.deal_status.status !== 'Pending') {
+            return new Response(null, { status: 204 });
+          }
+          const bank_b_id = await this.fetchBankId(
+            env,
+            trade_details.counterparty
+          );
+          const trade_b = await this.fetchOnChainTrade(
+            env,
+            bank_b_id,
+            trade_details.trade_id
+          );
+          if (trade_b.deal_status.status !== 'Pending') {
+            return new Response(null, { status: 204 });
+          }
 
-        const { trade_a, trade_b, deal_status } = onChainTrade;
-        if (deal_status.status !== 'Pending' || !trade_a || !trade_b) {
-          return new Response(null, { status: 204 });
-        }
+          let rejectedReason: string | undefined;
+          for (const key of Object.keys(trade_a.trade_details)) {
+            if (key === 'timestamp') {
+              const timestampA = trade_a.trade_details[key];
+              const timestampB = trade_b.trade_details[key];
+              if (Math.abs(timestampA - timestampB) > MAX_TIMESTAMP_DIFF) {
+                rejectedReason = 'timestamp diff too high';
+                break;
+              }
+            } else if (key === 'side') {
+              const orderSideMatches = match(trade_a.trade_details.side)
+                .with('Buy', () => trade_b.trade_details[key] === 'Sell')
+                .with('Sell', () => trade_b.trade_details[key] === 'Buy')
+                .exhaustive();
+              if (!orderSideMatches) {
+                rejectedReason = 'order side does not match';
+                break;
+              }
+            } else if (key === 'counterparty') {
+              const counterpartyMatches =
+                trade_a.bank === trade_b.trade_details[key] &&
+                trade_b.bank === trade_a.trade_details[key];
+              if (!counterpartyMatches) {
+                rejectedReason = `counterparties do not match. A:${trade_a.trade_details[key]}, B: ${trade_b.trade_details[key]}`;
+                break;
+              }
+            } else {
+              if (trade_a.trade_details[key] !== trade_b.trade_details[key]) {
+                rejectedReason = `trade data with key "${key}" does not match. A: ${trade_a.trade_details[key]}, B: ${trade_b.trade_details[key]}`;
+                break;
+              }
+            }
+          }
 
-        let rejectedReason: string | undefined;
-        for (const key of Object.keys(trade_a)) {
-          if (key === 'timestamp') {
-            const timestampA = trade_a[key];
-            const timestampB = trade_b[key];
-            if (Math.abs(timestampA - timestampB) > MAX_TIMESTAMP_DIFF) {
-              rejectedReason = 'timestamp diff too high';
-              break;
-            }
-          } else if (key === 'side') {
-            const orderSideMatches = match(trade_a.side)
-              .with('Buy', () => trade_b.side === 'Sell')
-              .with('Sell', () => trade_b.side === 'Buy')
-              .exhaustive();
-            if (!orderSideMatches) {
-              rejectedReason = 'order side does not match';
-              break;
-            }
+          let newDealStatus: DealStatus;
+          if (rejectedReason != null) {
+            newDealStatus = {
+              status: 'Rejected' as const,
+              message: rejectedReason
+            };
           } else {
-            if (trade_a[key] !== trade_b[key]) {
-              rejectedReason = `trade data with key ${key} does not match. A: ${trade_a[key]}, B: ${trade_b[key]}`;
-              break;
+            newDealStatus = {
+              status: 'Confirmed' as const,
+              message: `Trade with ID "${trade_details.trade_id}" confirmed`
+            };
+          }
+
+          await this.factoryContract.functionCall({
+            contractId: this.factoryContract.accountId,
+            methodName: 'settle_trade',
+            gas: '300000000000000',
+            args: {
+              partnership_id,
+              bank_a_id,
+              bank_b_id,
+              trade_id: trade_details.trade_id,
+              deal_status: newDealStatus
             }
-          }
+          });
+          return new Response(null, { status: 204 });
+        } catch (err) {
+          console.error('Something went wrong:', err);
+          return new Response(null, { status: 500 });
         }
+      })
+      .post('/confirm_payment', async c => {
+        if (!this.near || !this.factoryContract) return c.text('', 500);
 
-        let newDealStatus: DealStatus;
-        if (rejectedReason != null) {
-          newDealStatus = {
-            status: 'Rejected' as const,
-            message: rejectedReason
-          };
-        } else {
-          newDealStatus = {
-            status: 'Confirmed' as const,
-            message: 'it works'
-          };
+        const {
+          creditor,
+          debitor,
+          trade_id
+        }: { creditor: string; debitor: string; trade_id: string } =
+          await c.req.json();
+
+        try {
+          const creditor_id = await this.fetchBankId(env, creditor);
+          const debitor_id = await this.fetchBankId(env, debitor);
+
+          await this.factoryContract.functionCall({
+            contractId: this.factoryContract.accountId,
+            methodName: 'confirm_payment',
+            gas: '300000000000000',
+            args: {
+              creditor_id,
+              debitor_id,
+              trade_id
+            }
+          });
+          return new Response(null, { status: 204 });
+        } catch (err) {
+          console.error('Something went wrong:', err);
+          return new Response(null, { status: 500 });
         }
+      })
+      .post('/payment_confirmed', async c => {
+        if (!this.near || !this.factoryContract) return c.text('', 500);
 
-        await this.factoryContract.functionCall({
-          contractId: this.factoryContract.accountId,
-          methodName: 'settle_trade',
-          gas: '300000000000000',
-          args: {
-            partnership_id: partnership_id,
-            trade_id: trade.trade_id,
-            deal_status: newDealStatus
+        const { partnership_id, bank_id, trade_id }: ConfirmPaymentData =
+          await c.req.json();
+
+        try {
+          const trade_a = await this.fetchOnChainTrade(env, bank_id, trade_id);
+          const counterparty_id = await this.fetchBankId(
+            env,
+            trade_a.trade_details.counterparty
+          );
+          const trade_b = await this.fetchOnChainTrade(
+            env,
+            counterparty_id,
+            trade_id
+          );
+
+          if (
+            trade_a.payments.credit &&
+            trade_a.payments.debit &&
+            trade_b.payments.credit &&
+            trade_b.payments.debit
+          ) {
+            await this.factoryContract.functionCall({
+              contractId: this.factoryContract.accountId,
+              methodName: 'settle_trade',
+              gas: '300000000000000',
+              args: {
+                partnership_id,
+                bank_a_id: bank_id,
+                bank_b_id: counterparty_id,
+                trade_id,
+                deal_status: {
+                  status: 'Executed',
+                  message: ''
+                }
+              }
+            });
           }
-        });
-        return new Response(null, { status: 204 });
-      } catch (err) {
-        console.error('Something went wrong:', err);
-        return new Response(null, { status: 500 });
-      }
-    });
+          return new Response(null, { status: 204 });
+        } catch (err) {
+          console.error('Something went wrong:', err);
+          return new Response(null, { status: 500 });
+        }
+      });
   }
 
   async fetch(request: Request): Promise<Response> {
     return this.app.fetch(request);
+  }
+
+  private async fetchOnChainTrade(
+    env: Env,
+    bank_id: string,
+    trade_id: string
+  ): Promise<Trade> {
+    const res = await fetch(env.NEAR_RPC_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        params: {
+          request_type: 'call_function',
+          finality: 'final',
+          account_id: `${bank_id}.${env.FACTORY_ACCOUNT_ID}`,
+          method_name: 'get_trade',
+          args_base64: btoa(
+            JSON.stringify({
+              trade_id
+            })
+          )
+        },
+        jsonrpc: '2.0',
+        id: 'dontcare',
+        method: 'query'
+      })
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json: any = await res.json();
+    if (!json.result)
+      throw new Error(
+        `"get_trade" return type did not match expected: ${JSON.stringify(
+          json
+        )}`
+      );
+    const result = new Uint8Array(json.result.result);
+    const decoder = new TextDecoder();
+    const onChainTrade: Trade = JSON.parse(decoder.decode(result));
+    return onChainTrade;
+  }
+
+  private async fetchBankId(env: Env, bank: string): Promise<string> {
+    const res = await fetch(env.NEAR_RPC_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        params: {
+          request_type: 'call_function',
+          finality: 'final',
+          account_id: env.FACTORY_ACCOUNT_ID,
+          method_name: 'get_bank_id',
+          args_base64: btoa(
+            JSON.stringify({
+              bank
+            })
+          )
+        },
+        jsonrpc: '2.0',
+        id: 'dontcare',
+        method: 'query'
+      })
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json: any = await res.json();
+    if (!json.result)
+      throw new Error(
+        `"get_bank_id" return type did not match expected: ${JSON.stringify(
+          json
+        )}`
+      );
+    const result = new Uint8Array(json.result.result);
+    const decoder = new TextDecoder();
+    const bankId: string = JSON.parse(decoder.decode(result));
+    return bankId;
   }
 }

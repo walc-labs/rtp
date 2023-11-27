@@ -5,7 +5,7 @@ import type { Env } from './global';
 export type InfoResult = {
   last_block_height: number;
   init_block_height: number;
-  partnership_ids: string[];
+  bank_ids: string[];
 };
 
 export const info = new Hono<{ Bindings: Env }>()
@@ -35,7 +35,7 @@ export class Info {
       this.info = info ?? {
         last_block_height: 0,
         init_block_height: 0,
-        partnership_ids: []
+        bank_ids: []
       };
     });
 
@@ -46,7 +46,7 @@ export class Info {
       })
       .delete('*', async c => {
         if (!this.info) return c.text('', 500);
-        this.info.partnership_ids = [];
+        this.info.bank_ids = [];
         await this.state.storage.put('info', this.info);
         return new Response(null, { status: 204 });
       })
@@ -64,10 +64,9 @@ export class Info {
         await this.state.storage.put('info', this.info);
         return new Response(null, { status: 204 });
       })
-      .post('/new_partnership', async c => {
+      .post('/new_bank', async c => {
         if (!this.info) return c.text('', 500);
-        const partnershipId = await c.req.text();
-        this.info.partnership_ids.push(partnershipId);
+        this.info.bank_ids.push(await c.req.text());
         await this.state.storage.put('info', this.info);
         return new Response(null, { status: 204 });
       });
