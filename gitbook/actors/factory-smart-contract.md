@@ -48,9 +48,9 @@ enum DealStatus {
 }
 ```
 
-The FSC serves as a "factory" to deploy Partnership Smart Contracts (PSCs). By deploying a Smart Contract for every partnership we can take advantage of Near Protocols advanced scaling possibilities via sharding. We also make sure that the data for every partnership is separated.
+The FSC serves as a "factory" to deploy Bank Smart Contracts (BSCs). By deploying a Smart Contract for every bank we can take advantage of Near Protocols advanced scaling possibilities via sharding. We also make sure that the data for every bank is separated.
 
-The `store_contract` function is used to initialize the FSC by storing the raw bytes of a PSC. These bytes are necessary to deploy a new instance of a PSC and must be called after the FSC has been deployed.
+The `store_contract` function is used to initialize the FSC by storing the raw bytes of a BSC. These bytes are necessary to deploy a new instance of a BSC and must be called after the FSC has been deployed.
 
 The `create_bank` function can be called to deploy a new BSC. Every BSC is deployed on a newly created [sub-address](../terminology.md#addresses) of the FSC, where the prefix is calculated by hashing the Bank's name using the default Rust hashing algorithm.
 

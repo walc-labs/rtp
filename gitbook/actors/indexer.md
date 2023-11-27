@@ -1,6 +1,6 @@
 # 📖 Indexer
 
-The indexer is a program that watches and downloads the latest [blocks](../terminology.md#block) of the blockchain. It then goes through all transactions that are tracked inside these blocks and checks for occurrences of [FSC](factory-smart-contract.md) or [PSC](bank-smart-contract.md) function calls.\
+The indexer is a program that watches and downloads the latest [blocks](../terminology.md#block) of the blockchain. It then goes through all transactions that are tracked inside these blocks and checks for occurrences of [FSC](factory-smart-contract.md) or [BSC](bank-smart-contract.md) function calls.\
 \
 The indexer is built on top of the [Near Lake Framework](https://docs.near.org/tools/near-lake). The way it works is that a trusted entity ([Pagoda](https://www.pagoda.co/) in this case) hosts a [node](../terminology.md#node) of the blockchain, which downloads all the block data. This data will then be uploaded to an Amazon Web Services S3 bucket, where they can be downloaded by applications, that use the Near Lake Framework.
 
