@@ -10,8 +10,8 @@ The RTP PoC solution consists of various actors, that interact with each other. 
 [factory-smart-contract.md](factory-smart-contract.md)
 {% endcontent-ref %}
 
-{% content-ref url="partnership-smart-contract.md" %}
-[partnership-smart-contract.md](partnership-smart-contract.md)
+{% content-ref url="bank-smart-contract.md" %}
+[bank-smart-contract.md](bank-smart-contract.md)
 {% endcontent-ref %}
 
 ***

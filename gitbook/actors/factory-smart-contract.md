@@ -8,18 +8,19 @@ The FSC is described by the following interface. SCs on Near Protocol are genera
 trait Contract {
     fn store_contract(&mut self);
     
-    fn create_partnership(&mut self, bank_a: String, bank_b: String);
+    fn create_bank(&mut self, bank: String);
 
     fn perform_trade(
         &mut self,
-        bank: String,
-        partnership_id: String,
+        bank_id: String,
         trade_details: TradeDetails,
     );
     
     fn settle_trade(
         &mut self,
         partnership_id: String,
+        bank_a_id: String,
+        bank_b_id: String,
         trade_id: String,
         deal_status: DealStatus,
     );
@@ -51,8 +52,8 @@ The FSC serves as a "factory" to deploy Partnership Smart Contracts (PSCs). By d
 
 The `store_contract` function is used to initialize the FSC by storing the raw bytes of a PSC. These bytes are necessary to deploy a new instance of a PSC and must be called after the FSC has been deployed.
 
-The `create_partnership` function can be called to deploy a new PSC. Every PSC is deployed on a newly created [sub-address](../terminology.md#addresses) of the FSC, where the prefix is calculated by hashing a tuple of Bank A and Bank B's name using the default Rust hashing algorithm.
+The `create_bank` function can be called to deploy a new BSC. Every BSC is deployed on a newly created [sub-address](../terminology.md#addresses) of the FSC, where the prefix is calculated by hashing the Bank's name using the default Rust hashing algorithm.
 
-The `perform_trade` function can be called to send trade information to the respective PSC with `partnership_id`. The trade will be stored in the respective PSC and processed further by the off-chain systems.
+The `perform_trade` function can be called to send trade information to the respective BSC with `bank_id`. The trade will be stored in the respective BSC and processed further by the off-chain systems.
 
 The `settle_trade` function can be called to change the status of a trade to either be confirmed, rejected or executed. Trades are matched by the off-chain system and no matching happens during Smart Contract execution.
