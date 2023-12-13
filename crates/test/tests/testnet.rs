@@ -20,6 +20,7 @@ mod testnet {
     };
     use owo_colors::OwoColorize;
     use rtp_contract_common::{DealType, MatchingStatus, Product, Settlement, Side, TradeDetails};
+    use serde_json::Value;
     use std::{env, path::PathBuf, thread, time::Duration};
     use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -69,12 +70,40 @@ mod testnet {
         trade_details.counterparty = bank_a;
         call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
-        thread::sleep(Duration::from_secs(5));
+        thread::sleep(Duration::from_secs(10));
+
+        let account_a_id = format!("{bank_a_id}.{}", factory.id()).parse()?;
+        let account_b_id = format!("{bank_a_id}.{}", factory.id()).parse()?;
+        let trade_a = view::get_trade(&worker, &account_a_id, "trade_id").await?;
+        let trade_b = view::get_trade(&worker, &account_b_id, "trade_id").await?;
+        let matching_status = serde_json::to_value(trade_a.matching_status)?;
+        assert_eq!(
+            matching_status.get("status").unwrap(),
+            &Value::String("Confirmed".to_string())
+        );
+        let matching_status = serde_json::to_value(trade_b.matching_status)?;
+        assert_eq!(
+            matching_status.get("status").unwrap(),
+            &Value::String("Confirmed".to_string())
+        );
 
         call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
         call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
 
-        // TODO check off-chain matching via on-chain settlement
+        thread::sleep(Duration::from_secs(10));
+
+        let trade_a = view::get_trade(&worker, &account_a_id, "trade_id").await?;
+        let trade_b = view::get_trade(&worker, &account_b_id, "trade_id").await?;
+        let payment_status = serde_json::to_value(trade_a.payment_status)?;
+        assert_eq!(
+            payment_status.get("status").unwrap(),
+            &Value::String("Confirmed".to_string())
+        );
+        let payment_status = serde_json::to_value(trade_b.payment_status)?;
+        assert_eq!(
+            payment_status.get("status").unwrap(),
+            &Value::String("Confirmed".to_string())
+        );
 
         Ok(())
     }
