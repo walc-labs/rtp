@@ -9,7 +9,13 @@ import { Hono } from 'hono';
 import { match } from 'ts-pattern';
 
 import { Env } from './global';
-import { ConfirmPaymentData, DealStatus, SendTradeData, Trade } from './types';
+import {
+  ConfirmPaymentData,
+  MatchingStatus,
+  PaymentStatus,
+  SendTradeData,
+  Trade
+} from './types';
 
 const MAX_TIMESTAMP_DIFF = 1_000 * 60 * 60 * 2; // 2 hours
 
@@ -51,7 +57,7 @@ export class Partnerships {
             bank_a_id,
             trade_details.trade_id
           );
-          if (trade_a.deal_status.status !== 'Pending') {
+          if (trade_a.matching_status.status !== 'Pending') {
             return new Response(null, { status: 204 });
           }
           const bank_b_id = await this.fetchBankId(
@@ -63,7 +69,7 @@ export class Partnerships {
             bank_b_id,
             trade_details.trade_id
           );
-          if (trade_b.deal_status.status !== 'Pending') {
+          if (trade_b.matching_status.status !== 'Pending') {
             return new Response(null, { status: 204 });
           }
 
@@ -101,31 +107,45 @@ export class Partnerships {
             }
           }
 
-          let newDealStatus: DealStatus;
+          let newMatchingStatus: MatchingStatus;
           if (rejectedReason != null) {
-            newDealStatus = {
+            newMatchingStatus = {
               status: 'Rejected' as const,
               message: rejectedReason
             };
           } else {
-            newDealStatus = {
+            newMatchingStatus = {
               status: 'Confirmed' as const,
               message: `Trade with ID "${trade_details.trade_id}" confirmed`
             };
           }
 
-          await this.factoryContract.functionCall({
+          console.info(
+            `Sending transaction to blockchain.\nMethod: 'set_matching_status'\nMatching status: ${JSON.stringify(
+              newMatchingStatus,
+              undefined,
+              2
+            )}'`
+          );
+          const res = await this.factoryContract.functionCall({
             contractId: this.factoryContract.accountId,
-            methodName: 'settle_trade',
+            methodName: 'set_matching_status',
             gas: '300000000000000',
             args: {
               partnership_id,
               bank_a_id,
               bank_b_id,
               trade_id: trade_details.trade_id,
-              deal_status: newDealStatus
+              matching_status: newMatchingStatus
             }
           });
+          console.info(
+            `Transaction confirmed! Tx ID: ${JSON.stringify(
+              res.transaction,
+              undefined,
+              2
+            )}`
+          );
           return new Response(null, { status: 204 });
         } catch (err) {
           console.error('Something went wrong:', err);
@@ -186,21 +206,32 @@ export class Partnerships {
             trade_b.payments.credit &&
             trade_b.payments.debit
           ) {
-            await this.factoryContract.functionCall({
+            const payment_status = {
+              status: 'Confirmed',
+              message: `Payment for trade with ID "${trade_a.trade_details.trade_id}" confirmed`
+            } satisfies PaymentStatus;
+            console.info(
+              `Sending transaction to blockchain.\nMethod: 'set_payment_status'\nPayment status: ${JSON.stringify(
+                payment_status,
+                undefined,
+                2
+              )}'`
+            );
+            const res = await this.factoryContract.functionCall({
               contractId: this.factoryContract.accountId,
-              methodName: 'settle_trade',
+              methodName: 'set_payment_status',
               gas: '300000000000000',
               args: {
                 partnership_id,
                 bank_a_id: bank_id,
                 bank_b_id: counterparty_id,
                 trade_id,
-                deal_status: {
-                  status: 'Executed',
-                  message: ''
-                }
+                payment_status
               }
             });
+            console.info(
+              `Transaction confirmed! Tx ID: ${res.transaction_outcome.id}`
+            );
           }
           return new Response(null, { status: 204 });
         } catch (err) {

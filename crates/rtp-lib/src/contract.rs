@@ -6,8 +6,8 @@ use near_sdk::{
     AccountId, PanicOnDefault, Promise,
 };
 use rtp_contract_common::{
-    get_bank_id, get_partnership_id, DealStatus, PaymentConfirmation, Payments, RtpEvent, Trade,
-    TradeDetails,
+    get_bank_id, get_partnership_id, MatchingStatus, PaymentConfirmation, PaymentStatus, Payments,
+    RtpEvent, Trade, TradeDetails,
 };
 
 #[near_bindgen]
@@ -40,7 +40,8 @@ impl Contract {
             Trade {
                 bank: self.bank.clone(),
                 trade_details: trade_details.clone(),
-                deal_status: DealStatus::Pending,
+                matching_status: MatchingStatus::Pending,
+                payment_status: PaymentStatus::Pending,
                 payments: Payments::default(),
             },
         );
@@ -58,10 +59,10 @@ impl Contract {
     }
 
     #[handle_result]
-    pub fn settle_trade(
+    pub fn set_matching_status(
         &mut self,
         trade_id: String,
-        deal_status: DealStatus,
+        matching_status: MatchingStatus,
     ) -> Result<(), ContractError> {
         if env::predecessor_account_id() != self.factory {
             return Err(ContractError::NotFactory);
@@ -71,7 +72,7 @@ impl Contract {
             .trades
             .get_mut(&trade_id)
             .ok_or(ContractError::InvalidTradeId)?;
-        trade.deal_status = deal_status;
+        trade.matching_status = matching_status;
 
         Ok(())
     }
@@ -104,6 +105,25 @@ impl Contract {
             confirmation,
         };
         event.emit();
+
+        Ok(())
+    }
+
+    #[handle_result]
+    pub fn set_payment_status(
+        &mut self,
+        trade_id: String,
+        payment_status: PaymentStatus,
+    ) -> Result<(), ContractError> {
+        if env::predecessor_account_id() != self.factory {
+            return Err(ContractError::NotFactory);
+        }
+
+        let trade = self
+            .trades
+            .get_mut(&trade_id)
+            .ok_or(ContractError::InvalidTradeId)?;
+        trade.payment_status = payment_status;
 
         Ok(())
     }

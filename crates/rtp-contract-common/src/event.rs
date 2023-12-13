@@ -1,4 +1,4 @@
-use crate::{DealStatus, PaymentConfirmation, TradeDetails};
+use crate::{MatchingStatus, PaymentConfirmation, PaymentStatus, TradeDetails};
 use near_sdk::near_bindgen;
 
 #[near_bindgen(event_json(standard = "rtp"))]
@@ -13,10 +13,10 @@ pub enum RtpEvent {
         trade: TradeDetails,
     },
     #[event_version("1.0.0")]
-    SettleTrade {
+    SetMatchingStatus {
         partnership_id: String,
         trade_id: String,
-        deal_status: DealStatus,
+        matching_status: MatchingStatus,
     },
     #[event_version("1.0.0")]
     ConfirmPayment {
@@ -24,5 +24,11 @@ pub enum RtpEvent {
         bank_id: String,
         trade_id: String,
         confirmation: PaymentConfirmation,
+    },
+    #[event_version("1.0.0")]
+    SetPaymentStatus {
+        partnership_id: String,
+        trade_id: String,
+        payment_status: PaymentStatus,
     },
 }

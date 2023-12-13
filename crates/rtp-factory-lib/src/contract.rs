@@ -8,7 +8,9 @@ use near_sdk::{
     store::{Lazy, UnorderedSet},
     AccountId, Balance, PanicOnDefault, Promise, PromiseError,
 };
-use rtp_contract_common::{DealStatus, PaymentConfirmation, RtpEvent, TradeDetails};
+use rtp_contract_common::{
+    MatchingStatus, PaymentConfirmation, PaymentStatus, RtpEvent, TradeDetails,
+};
 use serde_json::json;
 use std::{
     collections::hash_map::DefaultHasher,
@@ -170,13 +172,13 @@ impl Contract {
 
     #[private]
     #[handle_result]
-    pub fn settle_trade(
+    pub fn set_matching_status(
         &mut self,
         partnership_id: String,
         bank_a_id: String,
         bank_b_id: String,
         trade_id: String,
-        deal_status: DealStatus,
+        matching_status: MatchingStatus,
     ) -> Result<Promise, ContractError> {
         if !self.bank_ids.contains(&bank_a_id) || !self.bank_ids.contains(&bank_b_id) {
             return Err(ContractError::BankNotYetExists);
@@ -188,43 +190,44 @@ impl Contract {
 
         Ok(rtp::ext(account_a_id.clone())
             .with_unused_gas_weight(1)
-            .settle_trade(trade_id.clone(), deal_status.clone())
+            .set_matching_status(trade_id.clone(), matching_status.clone())
             .and(
                 rtp::ext(account_b_id.clone())
                     .with_unused_gas_weight(1)
-                    .settle_trade(trade_id.clone(), deal_status.clone()),
+                    .set_matching_status(trade_id.clone(), matching_status.clone()),
             )
-            .then(Self::ext(factory_account_id).on_settle_trade(
+            .then(Self::ext(factory_account_id).on_set_matching_status(
                 partnership_id,
                 account_a_id,
                 account_b_id,
                 trade_id,
-                deal_status,
+                matching_status,
             )))
     }
 
     #[allow(clippy::too_many_arguments)]
     #[private]
-    pub fn on_settle_trade(
+    pub fn on_set_matching_status(
         &mut self,
         partnership_id: String,
         account_a_id: AccountId,
         account_b_id: AccountId,
         trade_id: String,
-        deal_status: DealStatus,
+        matching_status: MatchingStatus,
         #[callback_result] settlement_a: Result<(), PromiseError>,
         #[callback_result] settlement_b: Result<(), PromiseError>,
     ) {
-        let event = RtpEvent::SettleTrade {
+        let matching_status = if settlement_a.is_err() || settlement_b.is_err() {
+            rtp::ext(account_a_id).set_matching_status(trade_id.clone(), MatchingStatus::Error);
+            rtp::ext(account_b_id).set_matching_status(trade_id.clone(), MatchingStatus::Error);
+            MatchingStatus::Error
+        } else {
+            matching_status
+        };
+        let event = RtpEvent::SetMatchingStatus {
             partnership_id,
-            trade_id: trade_id.clone(),
-            deal_status: if settlement_a.is_err() || settlement_b.is_err() {
-                rtp::ext(account_a_id).settle_trade(trade_id.clone(), DealStatus::Error);
-                rtp::ext(account_b_id).settle_trade(trade_id, DealStatus::Error);
-                DealStatus::Error
-            } else {
-                deal_status
-            },
+            trade_id,
+            matching_status,
         };
 
         event.emit();
@@ -263,4 +266,66 @@ impl Contract {
 
     #[private]
     pub fn on_confirm_payment(&mut self, #[callback_unwrap] _a: (), #[callback_unwrap] _b: ()) {}
+
+    #[private]
+    #[handle_result]
+    pub fn set_payment_status(
+        &mut self,
+        partnership_id: String,
+        bank_a_id: String,
+        bank_b_id: String,
+        trade_id: String,
+        payment_status: PaymentStatus,
+    ) -> Result<Promise, ContractError> {
+        if !self.bank_ids.contains(&bank_a_id) || !self.bank_ids.contains(&bank_b_id) {
+            return Err(ContractError::BankNotYetExists);
+        }
+
+        let factory_account_id = env::current_account_id();
+        let account_a_id: AccountId = format!("{bank_a_id}.{factory_account_id}").parse().unwrap();
+        let account_b_id: AccountId = format!("{bank_b_id}.{factory_account_id}").parse().unwrap();
+
+        Ok(rtp::ext(account_a_id.clone())
+            .with_unused_gas_weight(1)
+            .set_payment_status(trade_id.clone(), payment_status.clone())
+            .and(
+                rtp::ext(account_b_id.clone())
+                    .with_unused_gas_weight(1)
+                    .set_payment_status(trade_id.clone(), payment_status.clone()),
+            )
+            .then(Self::ext(factory_account_id).on_set_payment_status(
+                partnership_id,
+                account_a_id,
+                account_b_id,
+                trade_id,
+                payment_status,
+            )))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[private]
+    pub fn on_set_payment_status(
+        &mut self,
+        partnership_id: String,
+        account_a_id: AccountId,
+        account_b_id: AccountId,
+        trade_id: String,
+        payment_status: PaymentStatus,
+        #[callback_result] settlement_a: Result<(), PromiseError>,
+        #[callback_result] settlement_b: Result<(), PromiseError>,
+    ) {
+        let event = RtpEvent::SetPaymentStatus {
+            partnership_id,
+            trade_id: trade_id.clone(),
+            payment_status: if settlement_a.is_err() || settlement_b.is_err() {
+                rtp::ext(account_a_id).set_payment_status(trade_id.clone(), PaymentStatus::Error);
+                rtp::ext(account_b_id).set_payment_status(trade_id, PaymentStatus::Error);
+                PaymentStatus::Error
+            } else {
+                payment_status
+            },
+        };
+
+        event.emit();
+    }
 }

@@ -28,10 +28,17 @@ export type ConfirmPaymentData = {
   confirmation: PaymentConfirmation;
 };
 
-export type DealStatus =
-  | { status: 'Pending' }
+export type MatchingStatus =
+  | { status: 'Pending' | 'Error' }
   | {
-      status: 'Confirmed' | 'Rejected' | 'Executed';
+      status: 'Confirmed' | 'Rejected';
+      message: string;
+    };
+
+export type PaymentStatus =
+  | { status: 'Pending' | 'Error' }
+  | {
+      status: 'Confirmed' | 'Rejected';
       message: string;
     };
 
@@ -53,22 +60,31 @@ export type Event =
       data: SendTradeData;
     }
   | {
-      event: 'settle_trade';
+      event: 'set_matching_status';
       data: {
         partnership_id: string;
         trade_id: string;
-        deal_status: DealStatus;
+        matching_status: MatchingStatus;
       };
     }
   | {
       event: 'confirm_payment';
       data: ConfirmPaymentData;
+    }
+  | {
+      event: 'set_payment_status';
+      data: {
+        partnership_id: string;
+        trade_id: string;
+        payment_status: PaymentStatus;
+      };
     };
 
 export type Trade = {
   bank: string;
   trade_details: TradeDetails;
-  deal_status: DealStatus;
+  matching_status: MatchingStatus;
+  payment_status: PaymentStatus;
   payments: Payments;
 };
 

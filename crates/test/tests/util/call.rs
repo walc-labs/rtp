@@ -5,7 +5,7 @@ use near_workspaces::{
     Account, Contract,
 };
 use rtp_common::ContractEvent;
-use rtp_contract_common::{DealStatus, TradeDetails};
+use rtp_contract_common::{MatchingStatus, TradeDetails};
 
 pub async fn new(contract: &Contract, sender: &Account) -> anyhow::Result<ExecutionResult<Value>> {
     let (res, _): (ExecutionResult<Value>, Vec<ContractEvent>) = log_tx_result(
@@ -102,19 +102,25 @@ pub async fn perform_trade(
     Ok((res, events))
 }
 
-pub async fn settle_trade(
+pub async fn set_matching_status(
     contract: &Contract,
     partnership_id: &str,
     bank_a_id: &str,
     bank_b_id: &str,
     trade_id: &str,
-    deal_status: &DealStatus,
+    matching_status: &MatchingStatus,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
     let (res, events) = log_tx_result(
-        Some("settle_trade"),
+        Some("set_matching_status"),
         contract
-            .call("settle_trade")
-            .args_json((partnership_id, bank_a_id, bank_b_id, trade_id, deal_status))
+            .call("set_matching_status")
+            .args_json((
+                partnership_id,
+                bank_a_id,
+                bank_b_id,
+                trade_id,
+                matching_status,
+            ))
             .max_gas()
             .transact()
             .await?,

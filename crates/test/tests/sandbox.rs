@@ -7,7 +7,7 @@ mod sandbox {
     use crate::util::*;
     use near_workspaces::types::NearToken;
     use rtp_contract_common::{
-        DealStatus, DealType, RtpEvent, Settlement, Side, Speed, TradeDetails,
+        DealType, MatchingStatus, Product, RtpEvent, Settlement, Side, TradeDetails,
     };
 
     const RTP_WASM: &[u8] = include_bytes!("../../../res/rtp.wasm");
@@ -65,7 +65,7 @@ mod sandbox {
             trade_id: "trade_id".to_string(),
             timestamp: 0,
             deal_type: DealType::FxDeal,
-            speed: Speed::RealTime,
+            product: Product::Spot,
             contract: "contract".to_string(),
             counterparty: bank_b.clone(),
             amount: "1".to_string(),
@@ -120,7 +120,7 @@ mod sandbox {
             trade_id: "trade_id".to_string(),
             timestamp: 0,
             deal_type: DealType::FxDeal,
-            speed: Speed::RealTime,
+            product: Product::Spot,
             contract: "contract".to_string(),
             counterparty: bank_b,
             amount: "1".to_string(),
@@ -135,21 +135,21 @@ mod sandbox {
         trade.counterparty = bank_a;
         call::perform_trade(&contract, &bank_b_id, &trade).await?;
 
-        let (_, events) = call::settle_trade(
+        let (_, events) = call::set_matching_status(
             &contract,
             &partnership_id,
             &bank_a_id,
             &bank_b_id,
             "trade_id",
-            &DealStatus::Confirmed("Trade successfull".to_string()),
+            &MatchingStatus::Confirmed("Trade successfull".to_string()),
         )
         .await?;
         assert_event_emits(
             events,
-            vec![RtpEvent::SettleTrade {
+            vec![RtpEvent::SetMatchingStatus {
                 partnership_id,
                 trade_id: "trade_id".to_string(),
-                deal_status: DealStatus::Confirmed("Trade successfull".to_string()),
+                matching_status: MatchingStatus::Confirmed("Trade successfull".to_string()),
             }],
         )?;
 
@@ -176,7 +176,7 @@ mod sandbox {
             trade_id: "trade_id".to_string(),
             timestamp: 0,
             deal_type: DealType::FxDeal,
-            speed: Speed::RealTime,
+            product: Product::Spot,
             contract: "contract".to_string(),
             counterparty: bank_b.clone(),
             amount: "1".to_string(),
@@ -191,13 +191,13 @@ mod sandbox {
         trade.counterparty = bank_a.clone();
         call::perform_trade(&factory, &bank_b_id, &trade).await?;
 
-        let (_, events) = call::settle_trade(
+        let (_, events) = call::set_matching_status(
             &factory,
             &partnership_id,
             &bank_a_id,
             &bank_b_id,
             "trade_id",
-            &DealStatus::Confirmed("Trade successfull".to_string()),
+            &MatchingStatus::Confirmed("Trade successfull".to_string()),
         )
         .await?;
 

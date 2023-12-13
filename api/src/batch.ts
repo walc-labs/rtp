@@ -26,7 +26,7 @@ export const batch = new Hono<{ Bindings: Env }>().post('/', async c => {
           body: JSON.stringify(data)
         });
       })
-      .with({ event: 'settle_trade', data: P.select() }, () => {
+      .with({ event: 'set_matching_status', data: P.select() }, () => {
         // noop
       })
       .with({ event: 'confirm_payment', data: P.select() }, data => {
@@ -36,6 +36,9 @@ export const batch = new Hono<{ Bindings: Env }>().post('/', async c => {
           method: 'POST',
           body: JSON.stringify(data)
         });
+      })
+      .with({ event: 'set_payment_status', data: P.select() }, () => {
+        // noop
       })
       .exhaustive();
   }

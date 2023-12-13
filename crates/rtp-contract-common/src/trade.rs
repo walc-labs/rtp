@@ -9,7 +9,7 @@ pub struct TradeDetails {
     pub trade_id: String,
     pub timestamp: u64,
     pub deal_type: DealType,
-    pub speed: Speed,
+    pub product: Product,
     pub contract: String,
     pub counterparty: String,
     // internal_external: String, // TODO not needed in smart contract?
@@ -33,8 +33,8 @@ pub enum DealType {
 
 #[derive(Clone, Debug, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub enum Speed {
-    RealTime,
+pub enum Product {
+    // RealTime,
     Spot,
     Forward,
 }
@@ -59,22 +59,28 @@ pub enum Settlement {
 pub struct Trade {
     pub bank: String,
     pub trade_details: TradeDetails,
-    pub deal_status: DealStatus,
+    pub matching_status: MatchingStatus,
+    pub payment_status: PaymentStatus,
     pub payments: Payments,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
 #[serde(crate = "near_sdk::serde")]
 #[serde(tag = "status", content = "message")]
-pub enum DealStatus {
-    /// new trade sent to smart contract that has not yet been matched and confirmed
+pub enum MatchingStatus {
     Pending,
-    /// confirmed trade and matched with counter trade, but not yet executed
     Confirmed(String),
-    /// rejected trade. Invalid match against counter party
     Rejected(String),
-    /// confirmed and executed trade by escrow/nostro
-    Executed(String),
+    Error,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, BorshSerialize, BorshDeserialize)]
+#[serde(crate = "near_sdk::serde")]
+#[serde(tag = "status", content = "message")]
+pub enum PaymentStatus {
+    Pending,
+    Confirmed(String),
+    Rejected(String),
     Error,
 }
 

@@ -19,8 +19,8 @@ mod testnet {
         Account, Contract, Worker,
     };
     use owo_colors::OwoColorize;
-    use rtp_contract_common::{DealStatus, DealType, Settlement, Side, Speed, TradeDetails};
-    use std::{env, path::PathBuf};
+    use rtp_contract_common::{DealType, MatchingStatus, Product, Settlement, Side, TradeDetails};
+    use std::{env, path::PathBuf, thread, time::Duration};
     use tokio::{fs::File, io::AsyncWriteExt};
 
     const RTP_FACTORY_WASM: &[u8] = include_bytes!("../../../res/rtp_factory.wasm");
@@ -46,11 +46,13 @@ mod testnet {
         let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
         let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
 
+        thread::sleep(Duration::from_secs(5));
+
         let mut trade_details = TradeDetails {
             trade_id: "trade_id".to_string(),
             timestamp: 0,
             deal_type: DealType::FxDeal,
-            speed: Speed::RealTime,
+            product: Product::Spot,
             contract: "contract".to_string(),
             counterparty: bank_b.clone(),
             amount: "1".to_string(),
@@ -67,6 +69,8 @@ mod testnet {
         trade_details.counterparty = bank_a;
         call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
+        thread::sleep(Duration::from_secs(5));
+
         call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
         call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
 
@@ -74,6 +78,11 @@ mod testnet {
 
         Ok(())
     }
+
+    // TODO test case with more banks/partnerships
+    // TODO test case with failing match
+    // TODO test failing payment
+    // TODO test timeout
 
     async fn deploy_contract(
         worker: &Worker<Testnet>,
