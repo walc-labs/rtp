@@ -2,14 +2,14 @@ pub mod call;
 pub mod view;
 
 use near_workspaces::{
-    network::Sandbox,
+    network::{NetworkClient, Sandbox},
     result::{ExecutionFinalResult, ExecutionResult, Value, ViewResultDetails},
     types::{KeyType, SecretKey},
-    Contract, DevNetwork, Worker,
+    AccountId, Contract, DevNetwork, Worker,
 };
 use owo_colors::OwoColorize;
 use rtp_common::{ContractEvent, KNOWN_EVENT_KINDS};
-use rtp_contract_common::RtpEvent;
+use rtp_contract_common::{MatchingStatus, PaymentStatus, RtpEvent};
 use serde::Serialize;
 use std::fmt;
 
@@ -132,6 +132,52 @@ where
         "actual and expected events did not match.\nActual: {:#?}\nExpected: {:#?}",
         &actual,
         &expected
+    );
+    Ok(())
+}
+
+pub async fn assert_trade_matching_status<T: ?Sized + NetworkClient>(
+    worker: &Worker<T>,
+    contract_id: &AccountId,
+    trade_id: &str,
+    matching_status: &MatchingStatus,
+) -> anyhow::Result<()> {
+    let trade = view::get_trade(worker, contract_id, trade_id).await?;
+    let actual = serde_json::to_value(trade.matching_status)?;
+    let expected = match matching_status {
+        MatchingStatus::Pending => "Pending".to_string(),
+        MatchingStatus::Confirmed(_) => "Confirmed".to_string(),
+        MatchingStatus::Rejected(_) => "Rejected".to_string(),
+        MatchingStatus::Error => "Error".to_string(),
+    };
+    assert_eq!(
+        actual.get("status").unwrap(),
+        &expected,
+        "Matching not confirmed for trade_id: {}",
+        trade_id
+    );
+    Ok(())
+}
+
+pub async fn assert_trade_payment_status<T: ?Sized + NetworkClient>(
+    worker: &Worker<T>,
+    contract_id: &AccountId,
+    trade_id: &str,
+    payment_status: &PaymentStatus,
+) -> anyhow::Result<()> {
+    let trade = view::get_trade(worker, contract_id, trade_id).await?;
+    let actual = serde_json::to_value(trade.payment_status)?;
+    let expected = match payment_status {
+        PaymentStatus::Pending => "Pending".to_string(),
+        PaymentStatus::Confirmed(_) => "Confirmed".to_string(),
+        PaymentStatus::Rejected(_) => "Rejected".to_string(),
+        PaymentStatus::Error => "Error".to_string(),
+    };
+    assert_eq!(
+        actual.get("status").unwrap(),
+        &expected,
+        "Payment not confirmed for trade_id: {}",
+        trade_id
     );
     Ok(())
 }

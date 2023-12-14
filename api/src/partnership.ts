@@ -127,25 +127,30 @@ export class Partnerships {
               2
             )}'`
           );
-          const res = await this.factoryContract.functionCall({
-            contractId: this.factoryContract.accountId,
-            methodName: 'set_matching_status',
-            gas: '300000000000000',
-            args: {
-              partnership_id,
-              bank_a_id,
-              bank_b_id,
-              trade_id: trade_details.trade_id,
-              matching_status: newMatchingStatus
-            }
-          });
-          console.info(
-            `Transaction confirmed! Tx ID: ${JSON.stringify(
-              res.transaction,
-              undefined,
-              2
-            )}`
-          );
+          this.factoryContract
+            .functionCall({
+              contractId: this.factoryContract.accountId,
+              methodName: 'set_matching_status',
+              gas: '300000000000000',
+              args: {
+                partnership_id,
+                bank_a_id,
+                bank_b_id,
+                trade_id: trade_details.trade_id,
+                matching_status: newMatchingStatus
+              }
+            })
+            .then(res => {
+              console.info(
+                `Transaction confirmed! Tx ID: ${res.transaction.hash}`
+              );
+            })
+            .catch(err => {
+              console.error(
+                `Transaction could not be broadcast for trade ID: ${trade_a.trade_details.trade_id}\nError: ${err}`
+              );
+              // TODO
+            });
           return new Response(null, { status: 204 });
         } catch (err) {
           console.error('Something went wrong:', err);
@@ -217,21 +222,30 @@ export class Partnerships {
                 2
               )}'`
             );
-            const res = await this.factoryContract.functionCall({
-              contractId: this.factoryContract.accountId,
-              methodName: 'set_payment_status',
-              gas: '300000000000000',
-              args: {
-                partnership_id,
-                bank_a_id: bank_id,
-                bank_b_id: counterparty_id,
-                trade_id,
-                payment_status
-              }
-            });
-            console.info(
-              `Transaction confirmed! Tx ID: ${res.transaction_outcome.id}`
-            );
+            this.factoryContract
+              .functionCall({
+                contractId: this.factoryContract.accountId,
+                methodName: 'set_payment_status',
+                gas: '300000000000000',
+                args: {
+                  partnership_id,
+                  bank_a_id: bank_id,
+                  bank_b_id: counterparty_id,
+                  trade_id,
+                  payment_status
+                }
+              })
+              .then(res => {
+                console.info(
+                  `Transaction confirmed! Tx ID: ${res.transaction.hash}`
+                );
+              })
+              .catch(err => {
+                console.error(
+                  `Transaction could not be broadcast for trade ID: ${trade_a.trade_details.trade_id}\nError: ${err}`
+                );
+                // TODO
+              });
           }
           return new Response(null, { status: 204 });
         } catch (err) {
