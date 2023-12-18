@@ -17,7 +17,7 @@ import {
   Trade
 } from './types';
 
-const MAX_TIMESTAMP_DIFF = 1_000 * 60 * 60 * 2; // 2 hours
+const MAX_TIMESTAMP_DIFF = 1_000 * 60; // 1 minute
 
 export class Partnerships {
   private state: DurableObjectState;
@@ -78,8 +78,10 @@ export class Partnerships {
             if (key === 'timestamp') {
               const timestampA = trade_a.trade_details[key];
               const timestampB = trade_b.trade_details[key];
+              console.log('timestampA', timestampA);
+              console.log('timestampB', timestampB);
               if (Math.abs(timestampA - timestampB) > MAX_TIMESTAMP_DIFF) {
-                rejectedReason = 'timestamp diff too high';
+                rejectedReason = 'trade matching timeout';
                 break;
               }
             } else if (key === 'side') {

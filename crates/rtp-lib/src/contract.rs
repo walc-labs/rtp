@@ -123,9 +123,12 @@ impl Contract {
             .trades
             .get_mut(&trade_id)
             .ok_or(ContractError::InvalidTradeId)?;
-        trade.payment_status = payment_status;
-
-        Ok(())
+        if let MatchingStatus::Confirmed(_) = trade.matching_status {
+            trade.payment_status = payment_status;
+            Ok(())
+        } else {
+            Err(ContractError::TradeMatchUnconfirmed)
+        }
     }
 
     #[handle_result]

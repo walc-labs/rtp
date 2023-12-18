@@ -23,7 +23,12 @@ mod testnet {
         DealType, MatchingStatus, PaymentStatus, Product, Settlement, Side, TradeDetails,
     };
     use serde_json::Value;
-    use std::{env, path::PathBuf, thread, time::Duration};
+    use std::{
+        env,
+        path::PathBuf,
+        thread,
+        time::{Duration, SystemTime, UNIX_EPOCH},
+    };
     use tokio::{fs::File, io::AsyncWriteExt};
 
     const RTP_FACTORY_WASM: &[u8] = include_bytes!("../../../res/rtp_factory.wasm");
@@ -460,9 +465,234 @@ mod testnet {
         Ok(())
     }
 
-    // TODO test case with failing match
-    // TODO test failing payment
-    // TODO test timeout
+    #[tokio::test]
+    async fn test_settle_trade_fail_match() -> anyhow::Result<()> {
+        dotenv::dotenv();
+
+        let worker = near_workspaces::testnet().await?;
+        let config = Config::new();
+
+        let factory = deploy_contract(&worker, &config).await?;
+
+        let bank_a = "Deutsche Bank".to_string();
+        let bank_b = "Sparkasse".to_string();
+
+        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+
+        let storage_cost = view::get_bank_storage_cost(&factory).await?;
+        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
+        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
+        let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
+        let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
+        let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
+
+        thread::sleep(Duration::from_secs(5));
+
+        let mut trade_details = TradeDetails {
+            trade_id: "trade_id".to_string(),
+            timestamp: 0,
+            deal_type: DealType::FxDeal,
+            product: Product::Spot,
+            contract: "contract".to_string(),
+            counterparty: bank_b.clone(),
+            amount: "1".to_string(),
+            price: "2".to_string(),
+            side: Side::Buy,
+            settlement: Settlement::RealTime,
+            delivery_date: 0,
+            payment_calendars: "payment_calendars".to_string(),
+            contract_number: "contract_number".to_string(),
+        };
+
+        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+        trade_details.side = Side::Sell;
+        trade_details.counterparty = bank_a;
+        // changing this value will make the trade fail
+        trade_details.price = "3".to_string();
+        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+
+        thread::sleep(Duration::from_secs(15));
+
+        assert_trade_matching_status(
+            &worker,
+            &account_a_id,
+            "trade_id",
+            &MatchingStatus::Rejected("".to_string()),
+        )
+        .await?;
+        assert_trade_matching_status(
+            &worker,
+            &account_b_id,
+            "trade_id",
+            &MatchingStatus::Rejected("".to_string()),
+        )
+        .await?;
+
+        call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
+        call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
+
+        thread::sleep(Duration::from_secs(15));
+
+        assert_trade_payment_status(&worker, &account_a_id, "trade_id", &PaymentStatus::Pending)
+            .await?;
+        assert_trade_payment_status(&worker, &account_b_id, "trade_id", &PaymentStatus::Pending)
+            .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_settle_trade_fail_payment() -> anyhow::Result<()> {
+        dotenv::dotenv();
+
+        let worker = near_workspaces::testnet().await?;
+        let config = Config::new();
+
+        let factory = deploy_contract(&worker, &config).await?;
+
+        let bank_a = "Deutsche Bank".to_string();
+        let bank_b = "Sparkasse".to_string();
+
+        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+
+        let storage_cost = view::get_bank_storage_cost(&factory).await?;
+        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
+        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
+        let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
+        let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
+        let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
+
+        thread::sleep(Duration::from_secs(5));
+
+        let mut trade_details = TradeDetails {
+            trade_id: "trade_id".to_string(),
+            timestamp: 0,
+            deal_type: DealType::FxDeal,
+            product: Product::Spot,
+            contract: "contract".to_string(),
+            counterparty: bank_b.clone(),
+            amount: "1".to_string(),
+            price: "2".to_string(),
+            side: Side::Buy,
+            settlement: Settlement::RealTime,
+            delivery_date: 0,
+            payment_calendars: "payment_calendars".to_string(),
+            contract_number: "contract_number".to_string(),
+        };
+
+        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+        trade_details.side = Side::Sell;
+        trade_details.counterparty = bank_a;
+        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+
+        thread::sleep(Duration::from_secs(15));
+
+        assert_trade_matching_status(
+            &worker,
+            &account_a_id,
+            "trade_id",
+            &MatchingStatus::Confirmed("".to_string()),
+        )
+        .await?;
+        assert_trade_matching_status(
+            &worker,
+            &account_b_id,
+            "trade_id",
+            &MatchingStatus::Confirmed("".to_string()),
+        )
+        .await?;
+
+        call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
+        // 2nd party doesn't confirm payment
+        // call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
+
+        thread::sleep(Duration::from_secs(15));
+
+        assert_trade_payment_status(&worker, &account_a_id, "trade_id", &PaymentStatus::Pending)
+            .await?;
+        assert_trade_payment_status(&worker, &account_b_id, "trade_id", &PaymentStatus::Pending)
+            .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_trade_timeout() -> anyhow::Result<()> {
+        dotenv::dotenv();
+
+        let worker = near_workspaces::testnet().await?;
+        let config = Config::new();
+
+        let factory = deploy_contract(&worker, &config).await?;
+
+        let bank_a = "Deutsche Bank".to_string();
+        let bank_b = "Sparkasse".to_string();
+
+        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+
+        let storage_cost = view::get_bank_storage_cost(&factory).await?;
+        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
+        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
+        let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
+        let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
+        let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
+
+        thread::sleep(Duration::from_secs(5));
+
+        let mut trade_details = TradeDetails {
+            trade_id: "trade_id".to_string(),
+            timestamp: 0,
+            deal_type: DealType::FxDeal,
+            product: Product::Spot,
+            contract: "contract".to_string(),
+            counterparty: bank_b.clone(),
+            amount: "1".to_string(),
+            price: "2".to_string(),
+            side: Side::Buy,
+            settlement: Settlement::RealTime,
+            delivery_date: 0,
+            payment_calendars: "payment_calendars".to_string(),
+            contract_number: "contract_number".to_string(),
+        };
+        trade_details.timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+
+        // 1 minute timeout configured in API
+        thread::sleep(Duration::from_secs(65));
+        trade_details.side = Side::Sell;
+        trade_details.counterparty = bank_a;
+        trade_details.timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+
+        thread::sleep(Duration::from_secs(15));
+
+        assert_trade_matching_status(
+            &worker,
+            &account_a_id,
+            "trade_id",
+            &MatchingStatus::Rejected("".to_string()),
+        )
+        .await?;
+        assert_trade_matching_status(
+            &worker,
+            &account_b_id,
+            "trade_id",
+            &MatchingStatus::Rejected("".to_string()),
+        )
+        .await?;
+
+        Ok(())
+    }
 
     async fn deploy_contract(
         worker: &Worker<Testnet>,

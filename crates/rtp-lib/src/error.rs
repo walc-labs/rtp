@@ -14,4 +14,6 @@ pub enum ContractError {
     InvalidTradeId,
     #[error("Trade incompete")]
     TradeIncomplete,
+    #[error("Trade match not yet confirmed")]
+    TradeMatchUnconfirmed,
 }
