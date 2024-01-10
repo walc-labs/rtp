@@ -73,13 +73,18 @@ export class Partnerships {
             return new Response(null, { status: 204 });
           }
 
+          console.info(
+            `Trying to match trades. Trade A:\n`,
+            trade_a,
+            `\nTrade B:\n`,
+            trade_b
+          );
+
           let rejectedReason: string | undefined;
           for (const key of Object.keys(trade_a.trade_details)) {
             if (key === 'timestamp') {
               const timestampA = trade_a.trade_details[key];
               const timestampB = trade_b.trade_details[key];
-              console.log('timestampA', timestampA);
-              console.log('timestampB', timestampB);
               if (Math.abs(timestampA - timestampB) > MAX_TIMESTAMP_DIFF) {
                 rejectedReason = 'trade matching timeout';
                 break;
@@ -159,36 +164,6 @@ export class Partnerships {
           return new Response(null, { status: 500 });
         }
       })
-      .post('/confirm_payment', async c => {
-        if (!this.near || !this.factoryContract) return c.text('', 500);
-
-        const {
-          creditor,
-          debitor,
-          trade_id
-        }: { creditor: string; debitor: string; trade_id: string } =
-          await c.req.json();
-
-        try {
-          const creditor_id = await this.fetchBankId(env, creditor);
-          const debitor_id = await this.fetchBankId(env, debitor);
-
-          await this.factoryContract.functionCall({
-            contractId: this.factoryContract.accountId,
-            methodName: 'confirm_payment',
-            gas: '300000000000000',
-            args: {
-              creditor_id,
-              debitor_id,
-              trade_id
-            }
-          });
-          return new Response(null, { status: 204 });
-        } catch (err) {
-          console.error('Something went wrong:', err);
-          return new Response(null, { status: 500 });
-        }
-      })
       .post('/payment_confirmed', async c => {
         if (!this.near || !this.factoryContract) return c.text('', 500);
 
@@ -205,6 +180,13 @@ export class Partnerships {
             env,
             counterparty_id,
             trade_id
+          );
+
+          console.info(
+            `Payment confirmed for trade A:\n`,
+            trade_a,
+            `\nand trade B:\n`,
+            trade_b
           );
 
           if (
