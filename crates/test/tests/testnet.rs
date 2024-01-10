@@ -14,9 +14,9 @@ pub struct Credentials {
 mod testnet {
     use crate::{config::Config, print_log, util::*, Credentials};
     use near_workspaces::{
-        network::Testnet,
+        network::{Testnet, Custom, TopLevelAccountCreator},
         types::{KeyType, NearToken, SecretKey},
-        Account, AccountId, Contract, Worker,
+        Account, AccountId, Contract, Worker, DevNetwork,
     };
     use owo_colors::OwoColorize;
     use rtp_contract_common::{
@@ -38,6 +38,7 @@ mod testnet {
     async fn test_settle_trade_basic() -> anyhow::Result<()> {
         dotenv::dotenv();
 
+        // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", &env::var("RPC_API_KEY").unwrap()).await?;
         let worker = near_workspaces::testnet().await?;
         let config = Config::new();
 
@@ -123,6 +124,7 @@ mod testnet {
     async fn test_settle_trade_complex() -> anyhow::Result<()> {
         dotenv::dotenv();
 
+        // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
         let worker = near_workspaces::testnet().await?;
         let config = Config::new();
 
@@ -469,6 +471,7 @@ mod testnet {
     async fn test_settle_trade_fail_match() -> anyhow::Result<()> {
         dotenv::dotenv();
 
+        // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
         let worker = near_workspaces::testnet().await?;
         let config = Config::new();
 
@@ -546,6 +549,7 @@ mod testnet {
     async fn test_settle_trade_fail_payment() -> anyhow::Result<()> {
         dotenv::dotenv();
 
+        // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
         let worker = near_workspaces::testnet().await?;
         let config = Config::new();
 
@@ -622,6 +626,7 @@ mod testnet {
     async fn test_trade_timeout() -> anyhow::Result<()> {
         dotenv::dotenv();
 
+        // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
         let worker = near_workspaces::testnet().await?;
         let config = Config::new();
 
@@ -694,10 +699,10 @@ mod testnet {
         Ok(())
     }
 
-    async fn deploy_contract(
-        worker: &Worker<Testnet>,
+    async fn deploy_contract<T>(
+        worker: &Worker<T>,
         config: &Config,
-    ) -> anyhow::Result<Contract> {
+    ) -> anyhow::Result<Contract> where T: DevNetwork + TopLevelAccountCreator + 'static {
         let factory_path: PathBuf = ["..", "..", ".near", config.factory_account_id.as_str()]
             .iter()
             .collect();
