@@ -6,9 +6,7 @@ mod util;
 mod sandbox {
     use crate::util::*;
     use near_workspaces::types::NearToken;
-    use rtp_contract_common::{
-        DealType, MatchingStatus, Product, RtpEvent, Settlement, Side, TradeDetails,
-    };
+    use rtp_contract_common::{MatchingStatus, Product, RtpEvent, Settlement, Side, TradeDetails};
 
     const RTP_WASM: &[u8] = include_bytes!("../../../res/rtp.wasm");
 
@@ -62,20 +60,10 @@ mod sandbox {
             view::get_partnership_id(&contract, bank_a.as_str(), bank_b.as_str()).await?;
 
         let mut trade = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
             product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            instrument_id: "EUR_USD".to_string(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
             side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
+            counterparty: bank_b,
+            ..Default::default()
         };
         let (_, events) = call::perform_trade(&contract, &bank_a_id, &trade).await?;
         assert_event_emits(
@@ -87,6 +75,7 @@ mod sandbox {
             }],
         )?;
 
+        trade.side = Side::Sell;
         trade.counterparty = bank_a;
         let (_, events) = call::perform_trade(&contract, &bank_b_id, &trade).await?;
         assert_event_emits(
@@ -118,22 +107,13 @@ mod sandbox {
             view::get_partnership_id(&contract, bank_a.as_str(), bank_b.as_str()).await?;
 
         let mut trade = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
             product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b,
-            instrument_id: "EUR_USD".to_string(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
             side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
+            counterparty: bank_b,
+            ..Default::default()
         };
         call::perform_trade(&contract, &bank_a_id, &trade).await?;
+        trade.side = Side::Sell;
         trade.counterparty = bank_a;
         call::perform_trade(&contract, &bank_b_id, &trade).await?;
 
@@ -175,22 +155,13 @@ mod sandbox {
             view::get_partnership_id(&factory, bank_a.as_str(), bank_b.as_str()).await?;
 
         let mut trade = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
             product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            instrument_id: "EUR_USD".to_string(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
             side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
+            counterparty: bank_b.clone(),
+            ..Default::default()
         };
         call::perform_trade(&factory, &bank_a_id, &trade).await?;
+        trade.side = Side::Sell;
         trade.counterparty = bank_a.clone();
         call::perform_trade(&factory, &bank_b_id, &trade).await?;
 
