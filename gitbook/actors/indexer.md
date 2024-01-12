@@ -8,7 +8,7 @@ The indexer initially only tracks the FSC and watches for [event](../terminology
 
 ```rust
 #[near_bindgen(event_json(standard = "rtp"))]
-pub enum RtpEvent {
+enum RtpEvent {
     #[event_version("1.0.0")]
     NewBank { bank: String, bank_id: String },
     #[event_version("1.0.0")]
@@ -18,10 +18,10 @@ pub enum RtpEvent {
         trade: TradeDetails,
     },
     #[event_version("1.0.0")]
-    SettleTrade {
+    SetMatchingStatus {
         partnership_id: String,
         trade_id: String,
-        deal_status: DealStatus,
+        matching_status: MatchingStatus,
     },
     #[event_version("1.0.0")]
     ConfirmPayment {
@@ -30,9 +30,15 @@ pub enum RtpEvent {
         trade_id: String,
         confirmation: PaymentConfirmation,
     },
+    #[event_version("1.0.0")]
+    SetPaymentStatus {
+        partnership_id: String,
+        trade_id: String,
+        payment_status: PaymentStatus,
+    },
 }
 ```
 
 When an `RtpEvent::NewBank` event has been emitted, the indexer will also keep track of the resulting BSC function calls.
 
-When an `RtpEvent::SendTrade`, `RtpEvent::SettleTrade` or `RtpEvent::ConfirmPayment` event was found it will be sent to the [Cloudflare Workers API](cloudflare-workers-api.md), where trades will be processed and matched.
+When an `RtpEvent::SendTrade`, `RtpEvent::SetMatchingStatus`, `RtpEvent::ConfirmPayment` or `RtpEvent::SetPaymentStatus` event was found it will be sent to the [Cloudflare Workers API](cloudflare-workers-api.md), where trades will be processed and matched.

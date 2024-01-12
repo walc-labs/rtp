@@ -16,13 +16,35 @@ trait Contract {
         trade_details: TradeDetails,
     );
     
-    fn settle_trade(
+    fn perform_trade(
+        &mut self,
+        bank_id: String,
+        trade_details: TradeDetails,
+    );
+    
+    fn set_matching_status(
         &mut self,
         partnership_id: String,
         bank_a_id: String,
         bank_b_id: String,
         trade_id: String,
-        deal_status: DealStatus,
+        matching_status: MatchingStatus,
+    );
+    
+    fn confirm_payment(
+        &mut self,
+        creditor_id: String,
+        debitor_id: String,
+        trade_id: String,
+    );
+    
+    fn set_payment_status(
+        &mut self,
+        partnership_id: String,
+        bank_a_id: String,
+        bank_b_id: String,
+        trade_id: String,
+        payment_status: PaymentStatus,
     );
 }
 
@@ -40,11 +62,18 @@ enum Side {
     Sell,
 }
 
-enum DealStatus {
+enum MatchingStatus {
     Pending,
     Confirmed(String),
     Rejected(String),
-    Executed(String),
+    Error,
+}
+
+enum PaymentStatus {
+    Pending,
+    Confirmed(String),
+    Rejected(String),
+    Error,
 }
 ```
 
@@ -56,4 +85,8 @@ The `create_bank` function can be called to deploy a new BSC. Every BSC is deplo
 
 The `perform_trade` function can be called to send trade information to the respective BSC with `bank_id`. The trade will be stored in the respective BSC and processed further by the off-chain systems.
 
-The `settle_trade` function can be called to change the status of a trade to either be confirmed, rejected or executed. Trades are matched by the off-chain system and no matching happens during Smart Contract execution.
+The `set_matching_status` function is called by the off-chain engine after two trades with the same `trade_id` have been received and matched against each other.
+
+The `confirm_payment` function can be called to confirm payment of successfully matched trades for a specific side of the trade. Thus in order to fully confirm a trade, both sides of the payment confirmation need to be received.
+
+The `set_payment_status` function is called by the off-chain engine after payments have been confirmed for a trade on both sides.
