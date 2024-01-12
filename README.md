@@ -27,6 +27,9 @@ In order to run the staging tests on Near testnet you need:
 - paid Cloudflare account to have access to Durable Objects
 
 ```sh
+# install dependencies
+yarn
+
 # login to Cloudflare
 yarn api wrangler login
 
