@@ -46,6 +46,6 @@ yarn api wrangler tail --env staging
 # start local indexer
 cargo run -p rtp-indexer
 
-# run staging tests. Cannot run in parallel, so #jobs is limited to 1
-cargo test --features testnet -j 1 -- --nocapture
+# run staging tests. Cannot run in parallel, so test threads is limited to 1
+cargo test --features testnet -- --nocapture --test-threads=1
 ```
