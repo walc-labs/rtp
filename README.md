@@ -2,6 +2,10 @@
 
 This repository contains the source for the Real Time Payments Proof of Concept.
 
+## Documentation
+
+Documentation via Gitbook can be found [here](https://mario-3.gitbook.io/rtp).
+
 ## Setup
 
 - install Nodejs
