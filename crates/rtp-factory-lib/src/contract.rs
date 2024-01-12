@@ -104,7 +104,7 @@ impl Contract {
 
         let promise_id = env::promise_batch_create(&account_id);
         env::promise_batch_action_create_account(promise_id);
-        env::promise_batch_action_transfer(promise_id, attached_deposit / 2);
+        env::promise_batch_action_transfer(promise_id, attached_deposit);
         env::promise_batch_action_deploy_contract(promise_id, code);
         env::promise_batch_action_function_call(
             promise_id,
@@ -167,6 +167,7 @@ impl Contract {
 
         Ok(rtp::ext(account_id)
             .with_unused_gas_weight(1)
+            // .with_attached_deposit(100_000_000_000_000_000_000_000)
             .perform_trade(trade_details))
     }
 

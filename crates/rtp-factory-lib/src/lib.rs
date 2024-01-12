@@ -24,7 +24,7 @@ const CREATE_CALL_GAS: Gas = Gas::from_tgas(40);
 /// Gas allocated on the callback.
 const ON_CREATE_CALL_GAS: Gas = Gas::from_tgas(10);
 
-const BANK_DEPOSIT_COVER_ADDITIONAL_BYTES: usize = 256;
+const BANK_DEPOSIT_COVER_ADDITIONAL_BYTES: usize = 1024;
 
 const BANK_DEPOSIT_TO_COVER_GAS: Balance = 2 * ONE_NEAR;
 

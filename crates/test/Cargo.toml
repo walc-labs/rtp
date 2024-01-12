@@ -19,6 +19,7 @@ owo-colors.workspace = true
 reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+test-case.workspace = true
 tokio.workspace = true
 tryhard.workspace = true
 

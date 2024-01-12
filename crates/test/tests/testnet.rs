@@ -14,13 +14,13 @@ pub struct Credentials {
 mod testnet {
     use crate::{config::Config, print_log, util::*, Credentials};
     use near_workspaces::{
-        network::{Testnet, Custom, TopLevelAccountCreator},
+        network::{Custom, Testnet, TopLevelAccountCreator},
         types::{KeyType, NearToken, SecretKey},
-        Account, AccountId, Contract, Worker, DevNetwork,
+        Account, AccountId, Contract, DevNetwork, Worker,
     };
     use owo_colors::OwoColorize;
     use rtp_contract_common::{
-        DealType, MatchingStatus, PaymentStatus, Product, Settlement, Side, TradeDetails,
+        MatchingStatus, PaymentStatus, Product, Settlement, Side, TradeDetails,
     };
     use serde_json::Value;
     use std::{
@@ -29,13 +29,30 @@ mod testnet {
         thread,
         time::{Duration, SystemTime, UNIX_EPOCH},
     };
+    use test_case::test_case;
     use tokio::{fs::File, io::AsyncWriteExt};
 
     const RTP_FACTORY_WASM: &[u8] = include_bytes!("../../../res/rtp_factory.wasm");
     const RTP_WASM: &[u8] = include_bytes!("../../../res/rtp.wasm");
 
+    #[test_case(TradeDetails {
+        product: Product::Spot,
+        ..Default::default()
+    }; "spot")]
+    #[test_case(TradeDetails {
+        product: Product::Ndf,
+        ..Default::default()
+    }; "ndf")]
+    #[test_case(TradeDetails {
+        product: Product::Fwd,
+        ..Default::default()
+    }; "fwd")]
+    #[test_case(TradeDetails {
+        product: Product::Swap,
+        ..TradeDetails::default_swap()
+    }; "swap")]
     #[tokio::test]
-    async fn test_settle_trade_basic() -> anyhow::Result<()> {
+    async fn test_settle_trade_basic(mut trade_details: TradeDetails) -> anyhow::Result<()> {
         dotenv::dotenv();
 
         // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", &env::var("RPC_API_KEY").unwrap()).await?;
@@ -59,22 +76,8 @@ mod testnet {
 
         thread::sleep(Duration::from_secs(5));
 
-        let mut trade_details = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
-            product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
-            side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
-        };
-
+        trade_details.side = Side::Buy;
+        trade_details.counterparty = bank_b;
         call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
         trade_details.side = Side::Sell;
         trade_details.counterparty = bank_a;
@@ -120,8 +123,24 @@ mod testnet {
         Ok(())
     }
 
+    #[test_case(TradeDetails {
+        product: Product::Spot,
+        ..Default::default()
+    }; "spot")]
+    #[test_case(TradeDetails {
+        product: Product::Ndf,
+        ..Default::default()
+    }; "ndf")]
+    #[test_case(TradeDetails {
+        product: Product::Fwd,
+        ..Default::default()
+    }; "fwd")]
+    #[test_case(TradeDetails {
+        product: Product::Swap,
+        ..TradeDetails::default_swap()
+    }; "swap")]
     #[tokio::test]
-    async fn test_settle_trade_complex() -> anyhow::Result<()> {
+    async fn test_settle_trade_complex(mut trade_details: TradeDetails) -> anyhow::Result<()> {
         dotenv::dotenv();
 
         // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
@@ -152,22 +171,6 @@ mod testnet {
         let account_d_id: AccountId = format!("{bank_d_id}.{}", factory.id()).parse()?;
 
         thread::sleep(Duration::from_secs(5));
-
-        let mut trade_details = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
-            product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
-            side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
-        };
 
         {
             let bank_a = bank_a.clone();
@@ -467,8 +470,24 @@ mod testnet {
         Ok(())
     }
 
+    #[test_case(TradeDetails {
+        product: Product::Spot,
+        ..Default::default()
+    }; "spot")]
+    #[test_case(TradeDetails {
+        product: Product::Ndf,
+        ..Default::default()
+    }; "ndf")]
+    #[test_case(TradeDetails {
+        product: Product::Fwd,
+        ..Default::default()
+    }; "fwd")]
+    #[test_case(TradeDetails {
+        product: Product::Swap,
+        ..TradeDetails::default_swap()
+    }; "swap")]
     #[tokio::test]
-    async fn test_settle_trade_fail_match() -> anyhow::Result<()> {
+    async fn test_settle_trade_fail_match(mut trade_details: TradeDetails) -> anyhow::Result<()> {
         dotenv::dotenv();
 
         // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
@@ -492,27 +511,13 @@ mod testnet {
 
         thread::sleep(Duration::from_secs(5));
 
-        let mut trade_details = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
-            product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
-            side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
-        };
-
+        trade_details.side = Side::Buy;
+        trade_details.counterparty = bank_b;
         call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
         trade_details.side = Side::Sell;
         trade_details.counterparty = bank_a;
         // changing this value will make the trade fail
-        trade_details.price = "3".to_string();
+        trade_details.price = 3.;
         call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
         thread::sleep(Duration::from_secs(15));
@@ -545,8 +550,24 @@ mod testnet {
         Ok(())
     }
 
+    #[test_case(TradeDetails {
+        product: Product::Spot,
+        ..Default::default()
+    }; "spot")]
+    #[test_case(TradeDetails {
+        product: Product::Ndf,
+        ..Default::default()
+    }; "ndf")]
+    #[test_case(TradeDetails {
+        product: Product::Fwd,
+        ..Default::default()
+    }; "fwd")]
+    #[test_case(TradeDetails {
+        product: Product::Swap,
+        ..TradeDetails::default_swap()
+    }; "swap")]
     #[tokio::test]
-    async fn test_settle_trade_fail_payment() -> anyhow::Result<()> {
+    async fn test_settle_trade_fail_payment(mut trade_details: TradeDetails) -> anyhow::Result<()> {
         dotenv::dotenv();
 
         // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
@@ -570,22 +591,8 @@ mod testnet {
 
         thread::sleep(Duration::from_secs(5));
 
-        let mut trade_details = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
-            product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
-            side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
-        };
-
+        trade_details.side = Side::Buy;
+        trade_details.counterparty = bank_b;
         call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
         trade_details.side = Side::Sell;
         trade_details.counterparty = bank_a;
@@ -622,8 +629,24 @@ mod testnet {
         Ok(())
     }
 
+    #[test_case(TradeDetails {
+        product: Product::Spot,
+        ..Default::default()
+    }; "spot")]
+    #[test_case(TradeDetails {
+        product: Product::Ndf,
+        ..Default::default()
+    }; "ndf")]
+    #[test_case(TradeDetails {
+        product: Product::Fwd,
+        ..Default::default()
+    }; "fwd")]
+    #[test_case(TradeDetails {
+        product: Product::Swap,
+        ..TradeDetails::default_swap()
+    }; "swap")]
     #[tokio::test]
-    async fn test_trade_timeout() -> anyhow::Result<()> {
+    async fn test_trade_timeout(mut trade_details: TradeDetails) -> anyhow::Result<()> {
         dotenv::dotenv();
 
         // let worker = near_workspaces::testnet_with_rpc("https://near-testnet.api.pagoda.co/rpc/v1/", API_KEY).await?;
@@ -647,22 +670,9 @@ mod testnet {
 
         thread::sleep(Duration::from_secs(5));
 
-        let mut trade_details = TradeDetails {
-            trade_id: "trade_id".to_string(),
-            timestamp: 0,
-            deal_type: DealType::FxDeal,
-            product: Product::Spot,
-            contract: "contract".to_string(),
-            counterparty: bank_b.clone(),
-            amount: "1".to_string(),
-            price: "2".to_string(),
-            side: Side::Buy,
-            settlement: Settlement::RealTime,
-            delivery_date: 0,
-            payment_calendars: "payment_calendars".to_string(),
-            contract_number: "contract_number".to_string(),
-        };
-        trade_details.timestamp = SystemTime::now()
+        trade_details.side = Side::Buy;
+        trade_details.counterparty = bank_b;
+        trade_details.event_timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
@@ -673,7 +683,7 @@ mod testnet {
         thread::sleep(Duration::from_secs(65));
         trade_details.side = Side::Sell;
         trade_details.counterparty = bank_a;
-        trade_details.timestamp = SystemTime::now()
+        trade_details.event_timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_millis() as u64;
@@ -699,10 +709,10 @@ mod testnet {
         Ok(())
     }
 
-    async fn deploy_contract<T>(
-        worker: &Worker<T>,
-        config: &Config,
-    ) -> anyhow::Result<Contract> where T: DevNetwork + TopLevelAccountCreator + 'static {
+    async fn deploy_contract<T>(worker: &Worker<T>, config: &Config) -> anyhow::Result<Contract>
+    where
+        T: DevNetwork + TopLevelAccountCreator + 'static,
+    {
         let factory_path: PathBuf = ["..", "..", ".near", config.factory_account_id.as_str()]
             .iter()
             .collect();

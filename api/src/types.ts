@@ -6,7 +6,7 @@ export type BatchData = {
 
 export type TradeDetails = {
   trade_id: string;
-  timestamp: number;
+  event_timestamp: number;
   side: 'Buy' | 'Sell';
   counterparty: string;
 } & Record<
