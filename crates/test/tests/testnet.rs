@@ -713,30 +713,50 @@ mod testnet {
     where
         T: DevNetwork + TopLevelAccountCreator + 'static,
     {
-        let factory_path: PathBuf = ["..", "..", ".near", config.factory_account_id.as_str()]
+        let factory_account_id: AccountId = format!(
+            "{}.{}",
+            config.factory_sub_account.as_str(),
+            config.master_account_id.as_str()
+        )
+        .parse()?;
+        let factory_path: PathBuf = ["..", "..", ".near", factory_account_id.as_str()]
             .iter()
             .collect();
-        let key = if let Ok(account) = Account::from_file(&factory_path, worker) {
-            let key = account.secret_key().clone();
+        let master_account = Account::from_secret_key(
+            config.master_account_id.clone(),
+            config.master_secret_key.clone(),
+            worker,
+        );
+        let factory_account = if let Some(factory_secret_key) = config.factory_secret_key.as_ref() {
+            Some(Account::from_secret_key(
+                factory_account_id.clone(),
+                factory_secret_key.clone(),
+                worker,
+            ))
+        } else {
+            Account::from_file(&factory_path, worker).ok()
+        };
+        let key = if let Some(factory_account) = factory_account {
+            let key = factory_account.secret_key().clone();
 
             print_log!(
                 "Cleaning old contract storage for {}",
-                config.factory_account_id.as_str().yellow()
+                factory_account_id.as_str().yellow()
             );
 
-            let factory = account.deploy(RTP_FACTORY_WASM).await?.into_result()?;
+            let factory = factory_account
+                .deploy(RTP_FACTORY_WASM)
+                .await?
+                .into_result()?;
             let bank_ids = view::get_bank_ids(&factory, None, None).await?;
             for bank_id in bank_ids {
                 call::remove_bank(&factory, &bank_id).await?;
             }
             call::clear_storage(&factory, factory.as_account()).await?;
 
-            print_log!(
-                "Deleting account {}",
-                config.factory_account_id.as_str().yellow()
-            );
-            if let Err(err) = account
-                .delete_account(&config.beneficiary_account_id)
+            print_log!("Deleting account {}", factory_account_id.as_str().yellow());
+            if let Err(err) = factory_account
+                .delete_account(&config.master_account_id)
                 .await?
                 .into_result()
             {
@@ -746,7 +766,7 @@ mod testnet {
         } else {
             let key = SecretKey::from_random(KeyType::ED25519);
             let credentials = Credentials {
-                account_id: config.factory_account_id.to_string(),
+                account_id: factory_account_id.to_string(),
                 public_key: serde_json::to_string(&key.public_key())?
                     .strip_prefix('\"')
                     .unwrap()
@@ -765,18 +785,29 @@ mod testnet {
                 .await?;
             print_log!(
                 "Created new account {}",
-                config.factory_account_id.as_str().yellow()
+                factory_account_id.as_str().yellow()
             );
             key
         };
 
-        let factory = worker
-            .create_tla_and_deploy(config.factory_account_id.clone(), key, RTP_FACTORY_WASM)
+        let factory = master_account
+            .create_subaccount(&config.factory_sub_account)
+            .keys(key)
+            .transact()
             .await?
             .into_result()?;
+        print_log!("Created subaccount {}", factory.id().as_str().yellow());
+
+        master_account
+            .transfer_near(factory.id(), NearToken::from_near(30))
+            .await?
+            .into_result()?;
+        print_log!("Funded subaccount {}", factory.id().as_str().yellow());
+
+        let factory = factory.deploy(RTP_FACTORY_WASM).await?.into_result()?;
         print_log!(
             "Deployed factory contract {}",
-            config.factory_account_id.as_str().yellow()
+            factory.id().as_str().yellow()
         );
 
         call::new(&factory, factory.as_account()).await?;

@@ -23,8 +23,15 @@ use rtp_common::{ContractEvent, NewBank, RtpEvent, RtpEventKind};
 use serde::Deserialize;
 use std::{env, sync::Arc};
 
-static FACTORY_ACCOUNT_ID: Lazy<AccountId> =
-    Lazy::new(|| env::var("FACTORY_ACCOUNT_ID").unwrap().parse().unwrap());
+static FACTORY_ACCOUNT_ID: Lazy<AccountId> = Lazy::new(|| {
+    format!(
+        "{}.{}",
+        env::var("FACTORY_SUB_ACCOUNT").unwrap(),
+        env::var("MASTER_ACCOUNT_ID").unwrap()
+    )
+    .parse()
+    .unwrap()
+});
 
 #[derive(Deserialize)]
 struct Info {
