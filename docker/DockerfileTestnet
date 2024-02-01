@@ -1,0 +1,42 @@
+FROM rust:1.75-slim AS chef
+
+WORKDIR /app
+RUN cargo install cargo-chef 
+
+
+FROM chef AS planner
+
+COPY crates/rtp-common crates/rtp-common
+COPY crates/rtp-contract-common crates/rtp-contract-common
+COPY crates/rtp-lib crates/rtp-lib
+COPY crates/test crates/test
+COPY Cargo.toml Cargo.toml
+COPY Cargo.lock Cargo.lock
+COPY rust-toolchain.toml rust-toolchain.toml
+RUN cargo chef prepare --recipe-path recipe.json
+
+
+FROM chef AS builder
+
+RUN apt-get update && \
+  apt-get install -y libssl-dev pkg-config
+
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+COPY crates/rtp-common crates/rtp-common
+COPY crates/rtp-contract-common crates/rtp-contract-common
+COPY crates/rtp-lib crates/rtp-lib
+COPY crates/test crates/test
+COPY Cargo.toml Cargo.toml
+COPY Cargo.lock Cargo.lock
+COPY rust-toolchain.toml rust-toolchain.toml
+COPY res res
+RUN cargo test --features testnet --no-run
+
+
+FROM builder
+
+WORKDIR /app
+RUN touch .env
+ENTRYPOINT ["cargo", "test", "--features", "testnet", "--", "--nocapture"]

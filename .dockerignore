@@ -1,0 +1,10 @@
+/target
+.DS_Store
+node_modules
+.env
+
+/.near
+dist
+*.tgz
+
+/docker
