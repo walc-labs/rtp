@@ -37,18 +37,22 @@ mod testnet {
 
     #[test_case(TradeDetails {
         product: Product::Spot,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "spot")]
     #[test_case(TradeDetails {
         product: Product::Ndf,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "ndf")]
     #[test_case(TradeDetails {
         product: Product::Fwd,
+        agreement: "Market".to_string(),
         ..Default::default()
     }; "fwd")]
     #[test_case(TradeDetails {
         product: Product::Swap,
+        agreement: "Market".to_string(),
         ..TradeDetails::default_swap()
     }; "swap")]
     #[tokio::test]
@@ -125,18 +129,22 @@ mod testnet {
 
     #[test_case(TradeDetails {
         product: Product::Spot,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "spot")]
     #[test_case(TradeDetails {
         product: Product::Ndf,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "ndf")]
     #[test_case(TradeDetails {
         product: Product::Fwd,
+        agreement: "Market".to_string(),
         ..Default::default()
     }; "fwd")]
     #[test_case(TradeDetails {
         product: Product::Swap,
+        agreement: "Market".to_string(),
         ..TradeDetails::default_swap()
     }; "swap")]
     #[tokio::test]
@@ -472,18 +480,22 @@ mod testnet {
 
     #[test_case(TradeDetails {
         product: Product::Spot,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "spot")]
     #[test_case(TradeDetails {
         product: Product::Ndf,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "ndf")]
     #[test_case(TradeDetails {
         product: Product::Fwd,
+        agreement: "Market".to_string(),
         ..Default::default()
     }; "fwd")]
     #[test_case(TradeDetails {
         product: Product::Swap,
+        agreement: "Market".to_string(),
         ..TradeDetails::default_swap()
     }; "swap")]
     #[tokio::test]
@@ -552,18 +564,22 @@ mod testnet {
 
     #[test_case(TradeDetails {
         product: Product::Spot,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "spot")]
     #[test_case(TradeDetails {
         product: Product::Ndf,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "ndf")]
     #[test_case(TradeDetails {
         product: Product::Fwd,
+        agreement: "Market".to_string(),
         ..Default::default()
     }; "fwd")]
     #[test_case(TradeDetails {
         product: Product::Swap,
+        agreement: "Market".to_string(),
         ..TradeDetails::default_swap()
     }; "swap")]
     #[tokio::test]
@@ -631,18 +647,22 @@ mod testnet {
 
     #[test_case(TradeDetails {
         product: Product::Spot,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "spot")]
     #[test_case(TradeDetails {
         product: Product::Ndf,
+        agreement: "Bilateral".to_string(),
         ..Default::default()
     }; "ndf")]
     #[test_case(TradeDetails {
         product: Product::Fwd,
+        agreement: "Market".to_string(),
         ..Default::default()
     }; "fwd")]
     #[test_case(TradeDetails {
         product: Product::Swap,
+        agreement: "Market".to_string(),
         ..TradeDetails::default_swap()
     }; "swap")]
     #[tokio::test]

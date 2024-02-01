@@ -124,7 +124,7 @@ impl Default for TradeDetails {
             mx_family: "CURR".to_string(),
             mx_group: "FXD".to_string(),
             mx_type: "Spot".to_string(),
-            agreement: "ISDA".to_string(),
+            agreement: "Bilateral".to_string(),
             settlement_method: "Nostro".to_string(),
             limits: true,
             authorization: true,
