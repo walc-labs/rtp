@@ -74,10 +74,10 @@ export class Partnerships {
           }
 
           console.info(
-            `Trying to match trades. Trade A:\n`,
-            trade_a,
-            `\nTrade B:\n`,
-            trade_b
+            `Trying to match trades. Trade A ID:\n`,
+            trade_a.trade_details.trade_id,
+            `\nTrade B ID:\n`,
+            trade_b.trade_details.trade_id
           );
 
           let rejectedReason: string | undefined;
@@ -183,10 +183,10 @@ export class Partnerships {
           );
 
           console.info(
-            `Payment confirmed for trade A:\n`,
-            trade_a,
-            `\nand trade B:\n`,
-            trade_b
+            `Payment confirmed for trade A ID:\n`,
+            trade_a.trade_details.trade_id,
+            `\nand trade B ID:\n`,
+            trade_b.trade_details.trade_id
           );
 
           if (
