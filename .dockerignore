@@ -5,6 +5,7 @@ node_modules
 
 /.near
 dist
+.wrangler
 *.tgz
 
 /docker

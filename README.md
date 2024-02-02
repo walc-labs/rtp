@@ -59,16 +59,22 @@ cargo test --features testnet -- --nocapture --test-threads=1
 Build containers:
 
 ```sh
-# build indexer
+# build API logs container
+docker build -t rtp-api -f docker/DockerfileApi .
+
+# build indexer container
 docker build -t rtp-indexer -f docker/DockerfileIndexer .
 
-# build test runner
+# build test runner container
 docker build -t rtp-testnet -f docker/DockerfileTestnet .
 ```
 
 Run containers:
 
 ```sh
+# connect to API logs
+docker run --rm -it -e CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN -e CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID -e CI=1 --name rtp-api rtp-api
+
 # run indexer
 docker run --rm -it -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e INDEXER_RPC_URL=$INDEXER_RPC_URL -e INDEXER_SECRET=$INDEXER_SECRET -e INDEXER_API_URL=$INDEXER_API_URL -e MASTER_ACCOUNT_ID=$MASTER_ACCOUNT_ID -e FACTORY_SUB_ACCOUNT=$FACTORY_ACCOUNT_ID --name rtp-indexer rtp-indexer
 

@@ -1,0 +1,10 @@
+FROM node:18-slim
+
+COPY package.json package.json
+COPY yarn.lock yarn.lock
+COPY tsconfig.json tsconfig.json
+COPY api api
+
+RUN yarn
+
+ENTRYPOINT ["yarn", "api", "wrangler", "tail", "--env", "staging"]
