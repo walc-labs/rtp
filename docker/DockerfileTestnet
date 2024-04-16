@@ -18,8 +18,28 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 
-RUN apt-get update && \
-  apt-get install -y libssl-dev pkg-config
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+    pkg-config \
+    libssl-dev \
+    wget \
+    ; \
+    \
+    url="https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init"; \
+    wget "$url"; \
+    chmod +x rustup-init; \
+    ./rustup-init -y --no-modify-path --default-toolchain nightly-2024-04-16 --profile minimal; \
+    rm rustup-init; \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME; \
+    rustup --version; \
+    cargo --version; \
+    rustc --version; \
+    \
+    apt-get remove -y --auto-remove \
+    wget \
+    ; \
+    rm -rf /var/lib/apt/lists/*;
 
 COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
@@ -28,15 +48,16 @@ COPY crates/rtp-common crates/rtp-common
 COPY crates/rtp-contract-common crates/rtp-contract-common
 COPY crates/rtp-lib crates/rtp-lib
 COPY crates/test crates/test
+RUN rm crates/test/tests/sandbox.rs
 COPY Cargo.toml Cargo.toml
 COPY Cargo.lock Cargo.lock
-COPY rust-toolchain.toml rust-toolchain.toml
 COPY res res
-RUN cargo test --features testnet --no-run
-
+RUN cargo +nightly-2024-04-16 test --features testnet --no-run
 
 FROM builder
 
 WORKDIR /app
 RUN touch .env
-ENTRYPOINT ["cargo", "test", "--features", "testnet", "--", "--nocapture"]
+ENV RUST_TEST_TIME_INTEGRATION=3600000,36000000
+
+ENTRYPOINT ["cargo", "+nightly-2024-04-16", "test", "-p", "rtp-test", "--features", "testnet", "--", "--nocapture", "-Zunstable-options", "--report-time", "--ensure-time"]

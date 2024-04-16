@@ -1,2 +1,3 @@
 .wrangler/state
+.wrangler/tmp
 dist
