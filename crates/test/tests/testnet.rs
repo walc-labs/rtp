@@ -26,7 +26,6 @@ mod testnet {
     use std::{
         env,
         path::PathBuf,
-        thread,
         time::{Duration, SystemTime, UNIX_EPOCH},
     };
     use test_case::test_case;
@@ -68,59 +67,85 @@ mod testnet {
         let bank_a = "Deutsche Bank".to_string();
         let bank_b = "Sparkasse".to_string();
 
-        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+        run_sub_test(
+            call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()),
+            "store bank contract binary in factory contract",
+        )
+        .await?;
 
         let storage_cost = view::get_bank_storage_cost(&factory).await?;
-        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_a),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_b),
+        )
+        .await?;
         let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
         let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
         let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
         let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
 
-        thread::sleep(Duration::from_secs(5));
+        pause_execution(Duration::from_secs(5));
 
-        trade_details.side = Side::Buy;
-        trade_details.counterparty = bank_b;
-        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
-        trade_details.side = Side::Sell;
-        trade_details.counterparty = bank_a;
-        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+        run_sub_test(
+            async {
+                trade_details.side = Side::Buy;
+                trade_details.counterparty.clone_from(&bank_b);
+                call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+                trade_details.side = Side::Sell;
+                trade_details.counterparty.clone_from(&bank_a);
+                call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
-        thread::sleep(Duration::from_secs(15));
+                pause_execution(Duration::from_secs(15));
 
-        assert_trade_matching_status(
-            &worker,
-            &account_a_id,
-            "trade_id",
-            &MatchingStatus::Confirmed("".to_string()),
+                assert_trade_matching_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &MatchingStatus::Confirmed("".to_string()),
+                )
+                .await?;
+                assert_trade_matching_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &MatchingStatus::Confirmed("".to_string()),
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "trade matching",
         )
         .await?;
-        assert_trade_matching_status(
-            &worker,
-            &account_b_id,
-            "trade_id",
-            &MatchingStatus::Confirmed("".to_string()),
-        )
-        .await?;
 
-        call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
-        call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
+        run_sub_test(
+            async {
+                call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
+                call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
 
-        thread::sleep(Duration::from_secs(15));
+                pause_execution(Duration::from_secs(15));
 
-        assert_trade_payment_status(
-            &worker,
-            &account_a_id,
-            "trade_id",
-            &PaymentStatus::Confirmed("".to_string()),
-        )
-        .await?;
-        assert_trade_payment_status(
-            &worker,
-            &account_b_id,
-            "trade_id",
-            &PaymentStatus::Confirmed("".to_string()),
+                assert_trade_payment_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &PaymentStatus::Confirmed("".to_string()),
+                )
+                .await?;
+                assert_trade_payment_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &PaymentStatus::Confirmed("".to_string()),
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "confirm payments",
         )
         .await?;
 
@@ -162,13 +187,33 @@ mod testnet {
         let bank_c = "JPMorgan".to_string();
         let bank_d = "Wells Fargo".to_string();
 
-        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+        run_sub_test(
+            call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()),
+            "store bank contract binary in factory contract",
+        )
+        .await?;
 
         let storage_cost = view::get_bank_storage_cost(&factory).await?;
-        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_c, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_d, NearToken::from_yoctonear(storage_cost)).await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_a),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_b),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_c, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_c),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_d, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_d),
+        )
+        .await?;
         let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
         let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
         let bank_c_id = view::get_bank_id(&factory, &bank_c).await?;
@@ -178,76 +223,124 @@ mod testnet {
         let account_c_id: AccountId = format!("{bank_c_id}.{}", factory.id()).parse()?;
         let account_d_id: AccountId = format!("{bank_d_id}.{}", factory.id()).parse()?;
 
-        thread::sleep(Duration::from_secs(5));
+        pause_execution(Duration::from_secs(5));
 
         {
             let bank_a = bank_a.clone();
             let bank_b = bank_b.clone();
             trade_details.trade_id = format!("{bank_a}:{bank_b}");
             trade_details.side = Side::Buy;
-            trade_details.counterparty = bank_b;
-            call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+            trade_details.counterparty.clone_from(&bank_b);
+            run_sub_test(
+                call::perform_trade(&factory, &bank_a_id, &trade_details),
+                &format!("send trade for bank {}", &bank_a),
+            )
+            .await?;
             trade_details.side = Side::Sell;
             trade_details.counterparty = bank_a;
-            call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+            run_sub_test(
+                call::perform_trade(&factory, &bank_b_id, &trade_details),
+                &format!("send trade for bank {}", &bank_b),
+            )
+            .await?;
         }
         {
             let bank_a = bank_a.clone();
             let bank_c = bank_c.clone();
             trade_details.trade_id = format!("{bank_a}:{bank_c}");
             trade_details.side = Side::Buy;
-            trade_details.counterparty = bank_c;
-            call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+            trade_details.counterparty.clone_from(&bank_c);
+            run_sub_test(
+                call::perform_trade(&factory, &bank_a_id, &trade_details),
+                &format!("send trade for bank {}", &bank_a),
+            )
+            .await?;
             trade_details.side = Side::Sell;
             trade_details.counterparty = bank_a;
-            call::perform_trade(&factory, &bank_c_id, &trade_details).await?;
+            run_sub_test(
+                call::perform_trade(&factory, &bank_c_id, &trade_details),
+                &format!("send trade for bank {}", &bank_c),
+            )
+            .await?;
         }
         {
             let bank_a = bank_a.clone();
             let bank_d = bank_d.clone();
             trade_details.trade_id = format!("{bank_a}:{bank_d}");
             trade_details.side = Side::Buy;
-            trade_details.counterparty = bank_d;
-            call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+            trade_details.counterparty.clone_from(&bank_d);
+            run_sub_test(
+                call::perform_trade(&factory, &bank_a_id, &trade_details),
+                &format!("send trade for bank {}", &bank_a),
+            )
+            .await?;
             trade_details.side = Side::Sell;
             trade_details.counterparty = bank_a;
-            call::perform_trade(&factory, &bank_d_id, &trade_details).await?;
+            run_sub_test(
+                call::perform_trade(&factory, &bank_d_id, &trade_details),
+                &format!("send trade for bank {}", &bank_d),
+            )
+            .await?;
         }
         {
             let bank_b = bank_b.clone();
             let bank_c = bank_c.clone();
             trade_details.trade_id = format!("{bank_b}:{bank_c}");
             trade_details.side = Side::Buy;
-            trade_details.counterparty = bank_c;
-            call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+            trade_details.counterparty.clone_from(&bank_c);
+            run_sub_test(
+                call::perform_trade(&factory, &bank_b_id, &trade_details),
+                &format!("send trade for bank {}", &bank_b),
+            )
+            .await?;
             trade_details.side = Side::Sell;
             trade_details.counterparty = bank_b;
-            call::perform_trade(&factory, &bank_c_id, &trade_details).await?;
+            run_sub_test(
+                call::perform_trade(&factory, &bank_c_id, &trade_details),
+                &format!("send trade for bank {}", &bank_c),
+            )
+            .await?;
         }
         {
             let bank_b = bank_b.clone();
             let bank_d = bank_d.clone();
             trade_details.trade_id = format!("{bank_b}:{bank_d}");
             trade_details.side = Side::Buy;
-            trade_details.counterparty = bank_d;
-            call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+            trade_details.counterparty.clone_from(&bank_d);
+            run_sub_test(
+                call::perform_trade(&factory, &bank_b_id, &trade_details),
+                &format!("send trade for bank {}", &bank_b),
+            )
+            .await?;
             trade_details.side = Side::Sell;
             trade_details.counterparty = bank_b;
-            call::perform_trade(&factory, &bank_d_id, &trade_details).await?;
+            run_sub_test(
+                call::perform_trade(&factory, &bank_d_id, &trade_details),
+                &format!("send trade for bank {}", &bank_d),
+            )
+            .await?;
         }
         {
             let bank_c = bank_c.clone();
             let bank_d = bank_d.clone();
             trade_details.trade_id = format!("{bank_c}:{bank_d}");
             trade_details.side = Side::Buy;
-            trade_details.counterparty = bank_d;
-            call::perform_trade(&factory, &bank_c_id, &trade_details).await?;
+            trade_details.counterparty.clone_from(&bank_d);
+            run_sub_test(
+                call::perform_trade(&factory, &bank_c_id, &trade_details),
+                &format!("send trade for bank {}", &bank_c),
+            )
+            .await?;
             trade_details.side = Side::Sell;
             trade_details.counterparty = bank_c;
-            call::perform_trade(&factory, &bank_d_id, &trade_details).await?;
+            run_sub_test(
+                call::perform_trade(&factory, &bank_d_id, &trade_details),
+                &format!("send trade for bank {}", &bank_d),
+            )
+            .await?;
         }
 
-        thread::sleep(Duration::from_secs(15));
+        pause_execution(Duration::from_secs(15));
 
         {
             let trade_id = format!("{bank_a}:{bank_b}");
@@ -266,8 +359,16 @@ mod testnet {
             )
             .await?;
 
-            call::confirm_payment(&factory, &bank_a_id, &bank_b_id, &trade_id).await?;
-            call::confirm_payment(&factory, &bank_b_id, &bank_a_id, &trade_id).await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_a_id, &bank_b_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_a),
+            )
+            .await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_b_id, &bank_a_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_b),
+            )
+            .await?;
         }
         {
             let trade_id = format!("{bank_a}:{bank_c}");
@@ -286,8 +387,16 @@ mod testnet {
             )
             .await?;
 
-            call::confirm_payment(&factory, &bank_a_id, &bank_c_id, &trade_id).await?;
-            call::confirm_payment(&factory, &bank_c_id, &bank_a_id, &trade_id).await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_a_id, &bank_c_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_a),
+            )
+            .await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_c_id, &bank_a_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_c),
+            )
+            .await?;
         }
         {
             let trade_id = format!("{bank_a}:{bank_d}");
@@ -306,8 +415,16 @@ mod testnet {
             )
             .await?;
 
-            call::confirm_payment(&factory, &bank_a_id, &bank_d_id, &trade_id).await?;
-            call::confirm_payment(&factory, &bank_d_id, &bank_a_id, &trade_id).await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_a_id, &bank_d_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_a),
+            )
+            .await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_d_id, &bank_a_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_d),
+            )
+            .await?;
         }
         {
             let trade_id = format!("{bank_b}:{bank_c}");
@@ -326,8 +443,16 @@ mod testnet {
             )
             .await?;
 
-            call::confirm_payment(&factory, &bank_b_id, &bank_c_id, &trade_id).await?;
-            call::confirm_payment(&factory, &bank_c_id, &bank_b_id, &trade_id).await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_b_id, &bank_c_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_b),
+            )
+            .await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_c_id, &bank_b_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_c),
+            )
+            .await?;
         }
         {
             let trade_id = format!("{bank_b}:{bank_d}");
@@ -346,8 +471,16 @@ mod testnet {
             )
             .await?;
 
-            call::confirm_payment(&factory, &bank_b_id, &bank_d_id, &trade_id).await?;
-            call::confirm_payment(&factory, &bank_d_id, &bank_b_id, &trade_id).await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_b_id, &bank_d_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_b),
+            )
+            .await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_d_id, &bank_b_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_d),
+            )
+            .await?;
         }
         {
             let trade_id = format!("{bank_c}:{bank_d}");
@@ -366,11 +499,19 @@ mod testnet {
             )
             .await?;
 
-            call::confirm_payment(&factory, &bank_c_id, &bank_d_id, &trade_id).await?;
-            call::confirm_payment(&factory, &bank_d_id, &bank_c_id, &trade_id).await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_c_id, &bank_d_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_c),
+            )
+            .await?;
+            run_sub_test(
+                call::confirm_payment(&factory, &bank_d_id, &bank_c_id, &trade_id),
+                &format!("confirm payment for bank {}", &bank_d),
+            )
+            .await?;
         }
 
-        thread::sleep(Duration::from_secs(15));
+        pause_execution(Duration::from_secs(15));
 
         {
             let trade_id = format!("{bank_a}:{bank_b}");
@@ -511,53 +652,89 @@ mod testnet {
         let bank_a = "Deutsche Bank".to_string();
         let bank_b = "Sparkasse".to_string();
 
-        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+        run_sub_test(
+            call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()),
+            "store bank contract binary in factory contract",
+        )
+        .await?;
 
         let storage_cost = view::get_bank_storage_cost(&factory).await?;
-        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_a),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_b),
+        )
+        .await?;
         let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
         let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
         let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
         let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
 
-        thread::sleep(Duration::from_secs(5));
+        pause_execution(Duration::from_secs(5));
 
-        trade_details.side = Side::Buy;
-        trade_details.counterparty = bank_b;
-        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
-        trade_details.side = Side::Sell;
-        trade_details.counterparty = bank_a;
-        // changing this value will make the trade fail
-        trade_details.price = 3.;
-        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+        run_sub_test(
+            async {
+                trade_details.side = Side::Buy;
+                trade_details.counterparty.clone_from(&bank_b);
+                call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+                trade_details.side = Side::Sell;
+                trade_details.counterparty.clone_from(&bank_a);
+                // changing this value will make the trade fail
+                trade_details.price = 3.;
+                call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
-        thread::sleep(Duration::from_secs(15));
+                pause_execution(Duration::from_secs(15));
 
-        assert_trade_matching_status(
-            &worker,
-            &account_a_id,
-            "trade_id",
-            &MatchingStatus::Rejected("".to_string()),
+                assert_trade_matching_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &MatchingStatus::Rejected("".to_string()),
+                )
+                .await?;
+                assert_trade_matching_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &MatchingStatus::Rejected("".to_string()),
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "trades not matching due to different price",
         )
         .await?;
-        assert_trade_matching_status(
-            &worker,
-            &account_b_id,
-            "trade_id",
-            &MatchingStatus::Rejected("".to_string()),
+
+        run_sub_test(
+            async {
+                call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
+                call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
+
+                pause_execution(Duration::from_secs(15));
+
+                assert_trade_payment_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &PaymentStatus::Pending,
+                )
+                .await?;
+                assert_trade_payment_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &PaymentStatus::Pending,
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "payments confirmation not working due to failed trade match",
         )
         .await?;
-
-        call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
-        call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
-
-        thread::sleep(Duration::from_secs(15));
-
-        assert_trade_payment_status(&worker, &account_a_id, "trade_id", &PaymentStatus::Pending)
-            .await?;
-        assert_trade_payment_status(&worker, &account_b_id, "trade_id", &PaymentStatus::Pending)
-            .await?;
 
         Ok(())
     }
@@ -595,52 +772,88 @@ mod testnet {
         let bank_a = "Deutsche Bank".to_string();
         let bank_b = "Sparkasse".to_string();
 
-        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+        run_sub_test(
+            call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()),
+            "store bank contract binary in factory contract",
+        )
+        .await?;
 
         let storage_cost = view::get_bank_storage_cost(&factory).await?;
-        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_a),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_b),
+        )
+        .await?;
         let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
         let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
         let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
         let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
 
-        thread::sleep(Duration::from_secs(5));
+        pause_execution(Duration::from_secs(5));
 
-        trade_details.side = Side::Buy;
-        trade_details.counterparty = bank_b;
-        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
-        trade_details.side = Side::Sell;
-        trade_details.counterparty = bank_a;
-        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+        run_sub_test(
+            async {
+                trade_details.side = Side::Buy;
+                trade_details.counterparty.clone_from(&bank_b);
+                call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+                trade_details.side = Side::Sell;
+                trade_details.counterparty.clone_from(&bank_a);
+                call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
-        thread::sleep(Duration::from_secs(15));
+                pause_execution(Duration::from_secs(15));
 
-        assert_trade_matching_status(
-            &worker,
-            &account_a_id,
-            "trade_id",
-            &MatchingStatus::Confirmed("".to_string()),
+                assert_trade_matching_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &MatchingStatus::Confirmed("".to_string()),
+                )
+                .await?;
+                assert_trade_matching_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &MatchingStatus::Confirmed("".to_string()),
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "trade matching",
         )
         .await?;
-        assert_trade_matching_status(
-            &worker,
-            &account_b_id,
-            "trade_id",
-            &MatchingStatus::Confirmed("".to_string()),
+
+        run_sub_test(
+            async {
+                call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
+                // 2nd party doesn't confirm payment
+                // call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
+
+                pause_execution(Duration::from_secs(15));
+
+                assert_trade_payment_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &PaymentStatus::Pending,
+                )
+                .await?;
+                assert_trade_payment_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &PaymentStatus::Pending,
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "did not receive payments from both sides",
         )
         .await?;
-
-        call::confirm_payment(&factory, &bank_a_id, &bank_b_id, "trade_id").await?;
-        // 2nd party doesn't confirm payment
-        // call::confirm_payment(&factory, &bank_b_id, &bank_a_id, "trade_id").await?;
-
-        thread::sleep(Duration::from_secs(15));
-
-        assert_trade_payment_status(&worker, &account_a_id, "trade_id", &PaymentStatus::Pending)
-            .await?;
-        assert_trade_payment_status(&worker, &account_b_id, "trade_id", &PaymentStatus::Pending)
-            .await?;
 
         Ok(())
     }
@@ -678,51 +891,69 @@ mod testnet {
         let bank_a = "Deutsche Bank".to_string();
         let bank_b = "Sparkasse".to_string();
 
-        call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()).await?;
+        run_sub_test(
+            call::store_contract(&factory, factory.as_account(), RTP_WASM.to_vec()),
+            "store bank contract binary in factory contract",
+        )
+        .await?;
 
         let storage_cost = view::get_bank_storage_cost(&factory).await?;
-        call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)).await?;
-        call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)).await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_a, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_a),
+        )
+        .await?;
+        run_sub_test(
+            call::create_bank(&factory, &bank_b, NearToken::from_yoctonear(storage_cost)),
+            &format!("create bank {} contract", &bank_b),
+        )
+        .await?;
         let bank_a_id = view::get_bank_id(&factory, &bank_a).await?;
         let bank_b_id = view::get_bank_id(&factory, &bank_b).await?;
         let account_a_id: AccountId = format!("{bank_a_id}.{}", factory.id()).parse()?;
         let account_b_id: AccountId = format!("{bank_b_id}.{}", factory.id()).parse()?;
 
-        thread::sleep(Duration::from_secs(5));
+        pause_execution(Duration::from_secs(5));
 
-        trade_details.side = Side::Buy;
-        trade_details.counterparty = bank_b;
-        trade_details.event_timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
+        run_sub_test(
+            async {
+                trade_details.side = Side::Buy;
+                trade_details.counterparty.clone_from(&bank_b);
+                trade_details.event_timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
 
-        call::perform_trade(&factory, &bank_a_id, &trade_details).await?;
+                // 1 minute timeout configured in API
+                pause_execution(Duration::from_secs(65));
+                trade_details.side = Side::Sell;
+                trade_details.counterparty = bank_a;
+                trade_details.event_timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as u64;
+                call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
 
-        // 1 minute timeout configured in API
-        thread::sleep(Duration::from_secs(65));
-        trade_details.side = Side::Sell;
-        trade_details.counterparty = bank_a;
-        trade_details.event_timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
-        call::perform_trade(&factory, &bank_b_id, &trade_details).await?;
+                pause_execution(Duration::from_secs(15));
 
-        thread::sleep(Duration::from_secs(15));
-
-        assert_trade_matching_status(
-            &worker,
-            &account_a_id,
-            "trade_id",
-            &MatchingStatus::Rejected("".to_string()),
-        )
-        .await?;
-        assert_trade_matching_status(
-            &worker,
-            &account_b_id,
-            "trade_id",
-            &MatchingStatus::Rejected("".to_string()),
+                assert_trade_matching_status(
+                    &worker,
+                    &account_a_id,
+                    "trade_id",
+                    &MatchingStatus::Rejected("".to_string()),
+                )
+                .await?;
+                assert_trade_matching_status(
+                    &worker,
+                    &account_b_id,
+                    "trade_id",
+                    &MatchingStatus::Rejected("".to_string()),
+                )
+                .await?;
+                anyhow::Ok(())
+            },
+            "trade matching timed out",
         )
         .await?;
 
@@ -756,6 +987,8 @@ mod testnet {
         } else {
             Account::from_file(&factory_path, worker).ok()
         };
+        println!("{}", "=== TEST ENVIRONMENT SETUP START ===".bold());
+        println!("{}", "Preparing testnet environment. These steps are only necessary during testing to restore a clean state. In production this does not need to be done".italic());
         let key = if let Some(factory_account) = factory_account {
             let key = factory_account.secret_key().clone();
 
@@ -831,6 +1064,10 @@ mod testnet {
         );
 
         call::new(&factory, factory.as_account()).await?;
+
+        println!("{}", "=== TEST ENVIRONMENT SETUP COMPLETE ===".bold());
+        let thread_name = std::thread::current().name().unwrap().to_string();
+        println!("Starting test: {}", thread_name.bold().bright_green());
 
         Ok(factory)
     }

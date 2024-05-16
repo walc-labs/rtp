@@ -1,8 +1,10 @@
 pub mod call;
 pub mod view;
 
+use futures::Future;
 use near_workspaces::{
     network::{NetworkClient, Sandbox},
+    operations::CallTransaction,
     result::{ExecutionFinalResult, ExecutionResult, Value, ViewResultDetails},
     types::{KeyType, SecretKey},
     AccountId, Contract, DevNetwork, Worker,
@@ -11,28 +13,25 @@ use owo_colors::OwoColorize;
 use rtp_common::{ContractEvent, KNOWN_EVENT_KINDS};
 use rtp_contract_common::{MatchingStatus, PaymentStatus, RtpEvent};
 use serde::Serialize;
-use std::fmt;
+use std::{
+    fmt, thread,
+    time::{self, Duration, Instant},
+};
 
 #[macro_export]
 macro_rules! print_log {
     ( $x:expr, $($y:expr),+ ) => {
-        let thread_name = std::thread::current().name().unwrap().to_string();
-        if thread_name == "main" {
-            println!($x, $($y),+);
-        } else {
-            let mut s = format!($x, $($y),+);
-            s = s.split('\n').map(|s| {
-                let mut pre = "    ".to_string();
-                pre.push_str(s);
-                pre.push('\n');
-                pre
-            }).collect::<String>();
-            println!(
-                "{}\n{}",
-                thread_name.bold(),
-                &s[..s.len() - 1],
-            );
-        }
+        let mut s = format!($x, $($y),+);
+        s = s.split('\n').map(|s| {
+            let mut pre = "    ".to_string();
+            pre.push_str(s);
+            pre.push('\n');
+            pre
+        }).collect::<String>();
+        println!(
+            "{}",
+            &s[..s.len() - 1],
+        );
     };
 }
 
@@ -52,10 +51,25 @@ pub async fn initialize_contracts() -> anyhow::Result<(Worker<Sandbox>, Contract
     Ok((worker, contract))
 }
 
-pub fn log_tx_result(
-    ident: Option<&str>,
-    res: ExecutionFinalResult,
+pub async fn log_tx_result(
+    ident: &str,
+    tx: CallTransaction,
 ) -> anyhow::Result<(ExecutionResult<Value>, Vec<ContractEvent>)> {
+    let now = Instant::now();
+    let res = tx.transact().await?;
+    let duration = Instant::now().duration_since(now);
+    println!("  call transaction: {}", ident.italic().bright_yellow());
+    print_log!(
+        "transaction executed in {:.3}s",
+        (duration.as_millis() as f64 / 1_000.)
+            .bright_magenta()
+            .bold()
+    );
+    print_log!(
+        "gas burnt: {:.3} {}",
+        res.total_gas_burnt.as_tgas().bright_magenta().bold(),
+        "TGas".bright_magenta().bold()
+    );
     for failure in res.receipt_failures() {
         print_log!("{:#?}", failure.bright_red());
     }
@@ -79,15 +93,24 @@ pub fn log_tx_result(
             }
         }
     }
-    if let Some(ident) = ident {
-        print_log!(
-            "{} gas burnt: {:.3} {}",
-            ident.italic(),
-            res.total_gas_burnt.as_tgas().bright_magenta().bold(),
-            "TGas".bright_magenta().bold()
+    Ok((res.into_result()?, events))
+}
+
+pub async fn run_sub_test<T>(future: T, test_success_msg: &str) -> anyhow::Result<T::Output>
+where
+    T: Future + Send,
+    T::Output: Send,
+{
+    let res = future.await;
+    if !test_success_msg.is_empty() {
+        println!(
+            "  {} {}: {}\n",
+            "✅".bold().bright_green(),
+            "Test passed".bold().bright_green(),
+            test_success_msg.italic().bright_green()
         );
     }
-    Ok((res.into_result()?, events))
+    Ok(res)
 }
 
 pub fn log_view_result(res: ViewResultDetails) -> anyhow::Result<ViewResultDetails> {
@@ -180,4 +203,14 @@ pub async fn assert_trade_payment_status<T: ?Sized + NetworkClient>(
         trade_id
     );
     Ok(())
+}
+
+pub fn pause_execution(duration: Duration) {
+    println!(
+        "  {}{}{}",
+        "Pausing execution for ".italic(),
+        duration.as_secs().italic(),
+        " seconds".italic()
+    );
+    thread::sleep(duration);
 }

@@ -4,7 +4,6 @@ mod view;
 
 pub use contract::*;
 pub use error::*;
-pub use view::*;
 
 use near_sdk::{
     borsh::{self, BorshSerialize},

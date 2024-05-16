@@ -60,27 +60,27 @@ Build containers:
 
 ```sh
 # build API logs container
-docker build -t rtp-api -f docker/DockerfileApi .
+docker build -t tarnadas/rtp-api -f docker/DockerfileApi .
 
 # build indexer container
-docker build -t rtp-indexer -f docker/DockerfileIndexer .
+docker build -t tarnadas/rtp-indexer -f docker/DockerfileIndexer .
 
 # build test runner container
-docker build -t rtp-testnet -f docker/DockerfileTestnet .
+docker build -t tarnadas/rtp-testnet -f docker/DockerfileTestnet .
 ```
 
 Run containers:
 
 ```sh
 # connect to API logs
-docker run --rm -it -e CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN -e CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID -e CI=1 --name rtp-api rtp-api
+docker run --rm -it -e CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN -e CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID -e CI=1 --name rtp-api tarnadas/rtp-api
 
 # run indexer
-docker run --rm -it -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e INDEXER_RPC_URL=$INDEXER_RPC_URL -e INDEXER_SECRET=$INDEXER_SECRET -e INDEXER_API_URL=$INDEXER_API_URL -e MASTER_ACCOUNT_ID=$MASTER_ACCOUNT_ID -e FACTORY_SUB_ACCOUNT=$FACTORY_ACCOUNT_ID --name rtp-indexer rtp-indexer
+docker run --rm -it -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY -e INDEXER_RPC_URL=$INDEXER_RPC_URL -e INDEXER_SECRET=$INDEXER_SECRET -e INDEXER_API_URL=$INDEXER_API_URL -e MASTER_ACCOUNT_ID=$MASTER_ACCOUNT_ID -e FACTORY_SUB_ACCOUNT=$FACTORY_ACCOUNT_ID --name rtp-indexer tarnadas/rtp-indexer
 
 # run test runner
 # give it the test you want to run
-docker run --rm -it -e MASTER_ACCOUNT_ID=$MASTER_ACCOUNT_ID -e MASTER_SECRET_KEY=$MASTER_SECRET_KEY -e FACTORY_SUB_ACCOUNT=$FACTORY_SUB_ACCOUNT -e FACTORY_SECRET_KEY=$FACTORY_SECRET_KEY --name rtp-testnet rtp-testnet [TEST_NAME]
+docker run --rm -it -e MASTER_ACCOUNT_ID=$MASTER_ACCOUNT_ID -e MASTER_SECRET_KEY=$MASTER_SECRET_KEY -e FACTORY_SUB_ACCOUNT=$FACTORY_SUB_ACCOUNT -e FACTORY_SECRET_KEY=$FACTORY_SECRET_KEY --name rtp-testnet tarnadas/rtp-testnet [TEST_NAME]
 # list of tests:
 # test_settle_trade_basic::spot
 # test_settle_trade_basic::ndf

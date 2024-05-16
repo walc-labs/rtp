@@ -112,19 +112,19 @@ impl Display for RtpEvent {
         ))?;
         match &self.event_kind {
             RtpEventKind::NewBank(data) => {
-                formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
+                formatter.write_fmt(format_args!("\n{}: {:#?}", "data".bright_cyan(), data))?;
             }
             RtpEventKind::SendTrade(data) => {
-                formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
+                formatter.write_fmt(format_args!("\n{}: {:#?}", "data".bright_cyan(), data))?;
             }
             RtpEventKind::SetMatchingStatus(data) => {
-                formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
+                formatter.write_fmt(format_args!("\n{}: {:#?}", "data".bright_cyan(), data))?;
             }
             RtpEventKind::SetPaymentStatus(data) => {
-                formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
+                formatter.write_fmt(format_args!("\n{}: {:#?}", "data".bright_cyan(), data))?;
             }
             RtpEventKind::ConfirmPayment(data) => {
-                formatter.write_fmt(format_args!("\n{}: {:?}", "data".bright_cyan(), data))?;
+                formatter.write_fmt(format_args!("\n{}: {:#?}", "data".bright_cyan(), data))?;
             }
         }
         Ok(())
